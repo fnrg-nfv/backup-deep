@@ -1,7 +1,5 @@
 # NFV Deep
 
-
-
 ### 优化
 
 基于NFVdeep进行以下优化：
@@ -17,7 +15,7 @@
 
 
 
-### 解决问题的框架：
+#### 解决问题的框架：
 
 - 问题定义
 
@@ -29,9 +27,6 @@
 
 ### TODO: 
 
->  (Due: Monday)
+1. 复现NFVdeep；
 
-1. 看NFVdeep与另一篇，对比解决问题的框架，思考优化的点；
-
-2. 学习强化学习的编程方式 (python，pytorch/tensorflow)
-3. 邮件：使用源码？复现
+2. 学习强化学习的编程方式 (python，pytorch)
