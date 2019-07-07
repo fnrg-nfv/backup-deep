@@ -1,32 +1,32 @@
-# NFV Deep
+# backup-deep
 
-### 优化
+## Motivation
 
-基于NFVdeep进行以下优化：
+- Dynamic, flexible with DRL;
 
-1. 基于时间戳=>基于事件
+## Design
 
-2. 考虑使用异策略：
-   - 贪婪算法 或 …
+### Problem Statement
 
-3. 使用比PG更高级的训练算法
+- With back-up instances;
+- VNF-based, not SFC;
+- Server/Host, not DC with inbound link.
 
-4. 被拒绝的request应重新考虑其放置
+### System Model
 
+- Time-based, not event-based;
+- Target: maximize throughput;
+- Reconsider Rearrangement. 
 
+### Learning Algorithm
 
-#### 解决问题的框架：
+- Online, Off-policy(DDPG);
 
-- 问题定义
+## Implementation
 
-- 算法执行
+## Evaluation
 
-- 算法优化（训练）
+## Conclusion
 
+## Summary
 
-
-### TODO: 
-
-1. 复现NFVdeep；
-
-2. 学习强化学习的编程方式 (python，pytorch)
