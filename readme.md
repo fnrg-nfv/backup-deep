@@ -21,6 +21,11 @@
 ### Learning Algorithm
 
 - Online, Off-policy(DDPG);
+- Use deterministic has
+
+### Some Tricks
+
+- Arriving SFC stream distribution; 
 
 ## Implementation
 
