@@ -1,0 +1,2 @@
+- Bandwidth is one-way rather than bidirectional;
+- 
