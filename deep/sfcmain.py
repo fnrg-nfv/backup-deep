@@ -1,4 +1,4 @@
-from nfvdeep import *
+from sfcbased import *
 
 # meta-parameters
 time_step = 1 # time slot
