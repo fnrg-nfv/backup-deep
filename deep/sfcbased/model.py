@@ -7,18 +7,26 @@ import torch.nn.functional as F
 import random
 from utils import *
 
+
 class VirtualException(BaseException):
     def __init__(self, _type, _func):
         BaseException(self)
 
+
 class BaseObject(object):
     def __repr__(self):
+        '''
+        When function print() is called, this function will determine what to display
+        :return: the __str__() result of current instance
+        '''
         return self.__str__()
+
 
 class Path(BaseObject):
     '''
     This class is denoted as the path from one server to another
     '''
+
     def __init__(self, start: int, destination: int, path: List, latency: float):
         '''
         This class is denoted as a path
@@ -36,7 +44,11 @@ class Path(BaseObject):
     def __str__(self):
         return self.path.__str__()
 
+
 class Monitor(BaseObject):
+    '''
+    Designed for Monitoring the actions of whole system
+    '''
     action_list = []
 
     @classmethod
@@ -87,8 +99,6 @@ class Monitor(BaseObject):
             print(item)
 
 
-
-
 class Batch(object):
     '''
     This class is designed for implementing batch
@@ -133,6 +143,7 @@ class Batch(object):
     def __len__(self):
         return len(self.__dataset)
 
+
 class Actor(object):
     '''
     Actor base class
@@ -146,6 +157,7 @@ class Actor(object):
         self.out_dim = len_action
         self._gamma = gamma
         self._tau = tau
+
 
 class SampleActor(Actor):
     '''
@@ -209,6 +221,7 @@ class SampleActor(Actor):
 
         self._optimizer.step()
 
+
 class TargetActor(Actor):
     '''
     target actor class
@@ -235,6 +248,7 @@ class TargetActor(Actor):
             target_param.data.copy_(
                 target_param.data * (1.0 - self._tau) + param.data * self._tau
             )
+
 
 class ActorNet(nn.Module):
     '''
@@ -284,6 +298,7 @@ class ActorNet(nn.Module):
         self.layer2.weight.data = fanin_init(self.layer2.weight.data.size())
         self.layer3.weight.data.uniform_(-init_w, init_w)
 
+
 class Critic(object):
     '''
     Critic basic class
@@ -301,6 +316,7 @@ class Critic(object):
         state, action = input_data
         input_data = torch.cat([state, action], 1)
         return self.net(input_data)
+
 
 class SampleCritic(Critic):
     '''
@@ -351,6 +367,7 @@ class SampleCritic(Critic):
         print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         self._optimizer.step()
 
+
 class TargetCritic(Critic):
     '''
     Target Critic
@@ -370,6 +387,7 @@ class TargetCritic(Critic):
             target_param.data.copy_(
                 target_param.data * (1.0 - self._tau) + param.data * self._tau
             )
+
 
 class CriticNet(nn.Module):
     '''
@@ -415,6 +433,7 @@ class CriticNet(nn.Module):
         self.layer2.weight.data = fanin_init(self.layer2.weight.data.size())
         self.layer3.weight.data.uniform_(-init_w, init_w)
 
+
 @unique
 class State(Enum):
     expired = 0
@@ -422,6 +441,7 @@ class State(Enum):
     running = 2
     deploying = 3
     future = 4
+
 
 class VNF(BaseObject):
     '''
@@ -436,10 +456,11 @@ class VNF(BaseObject):
         '''
         self.latency = latency
         self.computing_resource = computing_resource
-        self.deploy_decision = -1  # -1 represents not deployeed
+        self.deploy_decision = -1  # -1 represents not deployed
 
     def __str__(self):
         return "(%f, %d)" % (self.latency, self.computing_resource)
+
 
 class SFC(BaseObject):
     '''
@@ -489,6 +510,7 @@ class SFC(BaseObject):
                                                                                                 self.d,
                                                                                                 self.time, self.TTL)
 
+
 class Model(BaseObject):
     '''
     This class is denoted as the model, a model contains following:
@@ -521,8 +543,10 @@ class Model(BaseObject):
         :return: nothing
         '''
         for i in range(len(path.path) - 1):
-            self.topo[path.path[i]][path.path[i+1]]["bandwidth"] -= throughput
-            Monitor.bandwidth_change(path.path[i], path.path[i+1], self.topo[path.path[i]][path.path[i+1]]["bandwidth"] + throughput, self.topo[path.path[i]][path.path[i+1]]["bandwidth"])
+            self.topo[path.path[i]][path.path[i + 1]]["bandwidth"] -= throughput
+            Monitor.bandwidth_change(path.path[i], path.path[i + 1],
+                                     self.topo[path.path[i]][path.path[i + 1]]["bandwidth"] + throughput,
+                                     self.topo[path.path[i]][path.path[i + 1]]["bandwidth"])
 
     def revert_failed(self, failed_sfc_index: int, failed_vnf_index: int):
         '''
@@ -534,9 +558,11 @@ class Model(BaseObject):
         # computing resource
         for i in range(0, failed_vnf_index):
             before = self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"]
-            self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"] += self.sfc_list[failed_sfc_index].vnf_list[i].computing_resource
+            self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"] += \
+            self.sfc_list[failed_sfc_index].vnf_list[i].computing_resource
             after = self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"]
-            Monitor.computing_resource_change(self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision, before, after)
+            Monitor.computing_resource_change(self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision, before,
+                                              after)
         # bandwidth
         for path in self.sfc_list[failed_sfc_index].paths_occupied:
             for i in range(len(path.path) - 1):
@@ -548,10 +574,12 @@ class Model(BaseObject):
         self.sfc_list[failed_sfc_index].state = State.failed
         Monitor.change_failed(failed_sfc_index)
 
+
 class DecisionMaker(ABC):
     '''
     The class used to make deploy decision
     '''
+
     def __init__(self):
         super(DecisionMaker, self).__init__()
 
@@ -600,7 +628,8 @@ class DecisionMaker(ABC):
         '''
 
         # if deploy first vnf
-        pre_server_id = model.sfc_list[cur_sfc_index].s if cur_vnf_index == 0 else model.sfc_list[cur_sfc_index][cur_vnf_index - 1].deploy_decision
+        pre_server_id = model.sfc_list[cur_sfc_index].s if cur_vnf_index == 0 else model.sfc_list[cur_sfc_index][
+            cur_vnf_index - 1].deploy_decision
 
         # if deploy final vnf/ determine final_latency
         final_latency = 0
@@ -734,13 +763,13 @@ class DecisionMaker(ABC):
         '''
         final_latency = float("inf")
         final_path = False
-        for path in nx.all_simple_paths(model.topo, start_index, destination_index):  # the server_id is not the destination node
+        for path in nx.all_simple_paths(model.topo, start_index,
+                                        destination_index):  # the server_id is not the destination node
             cur_latency = self.path_latency(model, path)
             if cur_latency < final_latency:
                 final_latency = cur_latency
                 final_path = Path(start_index, destination_index, path, final_latency)
         return final_path
-
 
     @abstractmethod
     def make_decision(self, model: Model, state: State, cur_sfc_index: int, cur_vnf_index: int):
@@ -762,6 +791,7 @@ class DecisionMaker(ABC):
         :return: if success, return the path selected, else return False
         '''
         raise VirtualException()
+
 
 class RandomDecisionMaker(DecisionMaker):
     '''
@@ -800,6 +830,7 @@ def main():
     # nx.draw(topo, with_labels=True)
     # plt.show()
     print(random.sample([1], 1))
+
 
 if __name__ == '__main__':
     main()
