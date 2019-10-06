@@ -1,7 +1,11 @@
 # Problem
 - Online placement model;
 - Based on SFC;
-- One and only one backup;
+- One and only one stand-by;
+- Once place failed, not place again;
+- Instance broken, not server broken;
+- SFC and its stand-by are coupled, they should be placed together; 
+- Consider the damage of the stand-by instance.
 
 ## Resources
 
@@ -16,9 +20,69 @@
 # Solution
 
 - 建立一个基于**时序**的模型，即根据SFC的到来时间来做决定；
-- 强化学习算法只负责决定节点放置的位置，更新的链路
+- 强化学习算法只负责决定节点放置的位置，更新的链路使用贪心算法解决；
 - 使用强化学习算法进行解决。
 - 在考虑放置备份时，在当前物理资源满足的情况下：考虑**不预留资源/仅预留节点资源/预留节点资源与链路资源**；
+
+## 选路算法
+
+找到所有满足吞吐率和延迟的路径，然后选择最短的。
+
+## SFC State
+
+|   State    | Description                                                  |
+| :--------: | :----------------------------------------------------------- |
+| Undeployed | Not yet time to deploy.                                      |
+|   Failed   | Deploy failed.                                               |
+|   Normal   | The deployment is successful and the active instance is running. |
+|   Backup   | The deployment is successful, the active instance is damaged, and the stand-by instance is running. |
+|   Broken   | The deployment is successful, the active instance is not running, and the stand-by instance is not running too. |
+
+The state transition graph as following:
+
+| State transition  | Handle time    | Condition                                                    |
+| :---------------: | -------------- | ------------------------------------------------------------ |
+| Undeployed→Failed | present        | When a sfc need to be deployed, and can't be deployed.       |
+| Undeployed→Normal | present        | When a sfc need to be deployed, and deployed.                |
+|   Normal→Backup   | each time slot | When an active instance failed, the stand-by instance started. |
+|   Normal→Broken   | each time slot | When an active instance failed, the stand-by instance can't be started, **or time expired**. |
+|   Backup→Broken   | each time slot | When a stand-by instance failed, **or time expired**.        |
+
+## `Broken` reasons
+
+- **Time expired**: if a stand-by instance not start;
+- Sudden damage of the stand-by instance;
+- The stand-by instance did not start successfully when the active instance is damaged(because resource requirements are not met).
+
+## Some processes
+
+### In each time slot, handle state transition and reclaim resources
+
+**The first two transitions shouldn't be handled in this process.**
+
+- Determine which instance should failed in **previous time slot**, handle the transition: 
+
+  - Normal→Backup;
+  - Normal→Broken;
+  - Backup→Broken.
+
+  then reclaim the resource.
+
+- Determine which sfc is expired, **if the state is broken, then don't need to bother it**, for it has been handled in previous process, handle the expired condition.
+
+### When a stand-by instance need to be start
+
+- Release the reserved resources occupied by this stand-by instance;
+
+## Test environment
+
+| Name             | Description                                                  |
+| ---------------- | ------------------------------------------------------------ |
+| NoBackup         | No backup.                                                   |
+| Aggressive       | aggressive method, don't consider current remaining resources. |
+| Normal           | consider current remaining resources, will failed for **new active** or **stand-by→active**. |
+| MaxReservation   | consider current remaining and max reserved, will failed for **stand-by→active**. |
+| FullyReservation | will not failed.                                             |
 
 ## State
 
@@ -36,15 +100,3 @@
 - ~~从stand-by instance到end server的链路；~~
 
 - ~~从active instance到stand-by instance的状态更新链路。~~
-
-# toThink
-
-- 可以创建一个库，专门用来生成SFC；
-- 不考虑再为备份的实例放置备份；
-- 算法的可扩展性：当加入新的资源时怎么办（那就不加入新的资源）；
-- 坏是instance坏，而不是server坏，也就是整个链路的拓扑是不变的；
-- 为什么同样是随机使得服务器坏掉，强化学习一定比随机放置backup的更好呢。一是因为强化学习会考虑更新的开销，另一方面强化学习能够配置更好的backup组合，在服务器坏掉时，不会出现太大的纰漏，纰漏自己去想；
-- 列一个表格，定义损坏的broken，完好的，与完全失败的failed；
-- 可以总结一下stand-by无法启动的原因；
-- 可以总结下脱离服务的原因；
-- 当仅能放下一个SFC，而无法放置其备份时，判定为放置失败。

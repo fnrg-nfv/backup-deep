@@ -21,6 +21,68 @@ class BaseObject(object):
         '''
         return self.__str__()
 
+@unique
+class State(Enum):
+    Undeployed = 0
+    Failed = 1
+    Normal = 2
+    Backup = 3
+    Broken = 4
+
+
+@unique
+class VariableState(Enum):
+    Uninitialized = 0
+
+
+@unique
+class TestEnv(Enum):
+    NoBackup = 0
+    Aggressive = 1
+    Normal = 2
+    MaxReservation = 3
+    FullyReservation = 4
+
+
+@unique
+class SFCType(Enum):
+    Active = 0
+    Standby = 1
+
+class Decision(BaseObject):
+    '''
+    This class is denoted as a decision
+    '''
+
+    def __init__(self, active_server: int, standby_server: int):
+        '''
+        Initialization
+        :param active_server: server index of active instance
+        :param standby_server: server index of standby instance, if not backup, then -1
+        '''
+        self.active_server = active_server
+        self.standby_server = standby_server
+        self.active_path_s2c = VariableState.Uninitialized
+        self.standby_path_s2c = VariableState.Uninitialized
+        self.active_path_c2d = VariableState.Uninitialized
+        self.standby_path_c2d = VariableState.Uninitialized
+        self.update_path = VariableState.Uninitialized
+
+    def set_active_path_s2c(self, path: List):
+        self.active_path_s2c = path
+
+    def set_standby_path_s2c(self, path: List):
+        self.standby_path_s2c = path
+
+    def set_active_path_c2d(self, path: List):
+        self.active_path_c2d = path
+
+    def set_standby_path_c2d(self, path: List):
+        self.standby_path_c2d = path
+
+    def set_update_path(self, path: List):
+        self.update_path = path
+
 
 class Path(BaseObject):
     '''
@@ -46,57 +108,514 @@ class Path(BaseObject):
 
 
 class Monitor(BaseObject):
-    '''
+    """
     Designed for Monitoring the actions of whole system
-    '''
+    """
     action_list = []
+    format_logs = []
+
+    @classmethod
+    def state_transition(cls, sfc_index: int, pre_state: State, new_state: State):
+        """
+        Handle the state transition condition
+        :param pre_state: previous state
+        :param new_state: new state
+        :return: nothing
+        """
+        cls.log("")
+        cls.log("The state of SFC {} changes from {} to {}".format(sfc_index, pre_state, new_state))
+        cls.format_log([sfc_index, pre_state, new_state])
 
     @classmethod
     def log(cls, content: str):
         cls.action_list.append(content)
 
     @classmethod
-    def change_deploying(cls, sfc_index: int):
-        cls.log("")
-        cls.log("The state of SFC {} changes to Deploying".format(sfc_index))
+    def format_log(cls, content: List):
+        cls.format_logs.append(content)
 
     @classmethod
     def change_failed(cls, sfc_index: int):
+        cls.log("")
         cls.log("The state of SFC {} changes to Failed".format(sfc_index))
 
     @classmethod
-    def change_expired(cls, sfc_index: int):
+    def change_normal(cls, sfc_index: int):
+        cls.log("The state of SFC {} changes to Normal".format(sfc_index))
+
+    @classmethod
+    def change_backup(cls, sfc_index: int):
+        cls.log("The state of SFC {} changes to Backup".format(sfc_index))
+
+    @classmethod
+    def change_broken(cls, sfc_index: int):
         cls.log("")
-        cls.log("The state of SFC {} changes to Expired".format(sfc_index))
+        cls.log("The state of SFC {} changes to Broken".format(sfc_index))
 
     @classmethod
-    def change_running(cls, sfc_index: int):
-        cls.log("The state of SFC {} changes to Running".format(sfc_index))
-
-    @classmethod
-    def deploy_server(cls, sfc_index: int, vnf_index: int, server_id: int):
-        cls.log("SFC {} VNF {} deploy on server {}".format(sfc_index, vnf_index, server_id))
+    def deploy_server(cls, sfc_index: int, server_id: int):
+        cls.log("SFC {} deploy on server {}".format(sfc_index, server_id))
 
     @classmethod
     def path_occupied(cls, path: Path, sfc_index: int):
         cls.log("Path {} is occupied by SFC {}".format(path, sfc_index))
 
     @classmethod
-    def latency_occupied_change(cls, sfc_index: int, before: float, after: float):
-        cls.log("Latency occupied by SFC {} changes from {} to {}".format(sfc_index, before, after))
+    def active_computing_resource_change(cls, server_id: int, before: int, after: int):
+        cls.log("The active computing resource of server {} from {} changes to {}".format(server_id, before, after))
 
     @classmethod
-    def computing_resource_change(cls, server_id: int, before: int, after: int):
-        cls.log("The computing resource of server {} from {} changes to {}".format(server_id, before, after))
+    def active_bandwidth_change(cls, start: int, destination: int, before: int, after: int):
+        cls.log("The active bandwidth of link from {} to {} changes from {} to {}".format(start, destination, before,
+                                                                                          after))
 
     @classmethod
-    def bandwidth_change(cls, start: int, destination: int, before: int, after: int):
-        cls.log("The bandwidth of link from {} to {} changes from {} to {}".format(start, destination, before, after))
+    def reserved_computing_resource_change(cls, server_id: int, before: int, after: int):
+        cls.log("The reserved computing resource of server {} from {} changes to {}".format(server_id, before, after))
+
+    @classmethod
+    def reserved_bandwidth_change(cls, start: int, destination: int, before: int, after: int):
+        cls.log("The reserved bandwidth of link from {} to {} changes from {} to {}".format(start, destination, before,
+                                                                                            after))
 
     @classmethod
     def print_log(cls):
         for item in cls.action_list:
             print(item)
+
+
+class Instance(BaseObject):
+    """
+    This class is denoted as an instance.
+    """
+    def __init__(self, sfc_index: int, is_active: bool):
+        self.sfc_index = sfc_index
+        self.is_active = is_active
+
+
+class ACSFC(BaseObject):
+    """
+    This class is denoted as an active SFC.
+    """
+
+    def __init__(self):
+        self.server = VariableState.Uninitialized
+        self.downtime = VariableState.Uninitialized
+        self.path_s2c = VariableState.Uninitialized
+        self.path_c2d = VariableState.Uninitialized
+
+
+class SBSFC(BaseObject):
+    '''
+    This class is denoted as a stand-by SFC.
+    '''
+
+    def __init__(self):
+        self.server = VariableState.Uninitialized
+        self.starttime = VariableState.Uninitialized
+        self.downtime = VariableState.Uninitialized
+        self.path_s2c = VariableState.Uninitialized
+        self.path_c2d = VariableState.Uninitialized
+
+
+class SFC(BaseObject):
+    """
+    This class is denoted as a SFC
+    """
+
+    def __init__(self, computing_resource: int, tp: int, latency: float, update_tp: int, process_latency: float, s: int,
+                 d: int, time: float, TTL: int):
+        """
+        SFC initialization
+        :param computing_resource: computing_resource required
+        :param tp: totally throughput required
+        :param latency: totally latency required
+        :param update_tp: update throughput required
+        :param process_latency: latency of processing
+        :param s: start server
+        :param d: destination server
+        :param time: arriving time
+        :param TTL: time to live
+        """
+        self.computing_resource = computing_resource
+        self.tp = tp
+        self.latency = latency
+        self.update_tp = update_tp
+        self.process_latency = process_latency
+        self.s = s
+        self.d = d
+        self.time = time
+        self.TTL = TTL
+
+        self.state = State.Undeployed
+        self.update_path = VariableState.Uninitialized
+        self.active_sfc = ACSFC()
+        self.standby_sfc = SBSFC()
+
+    def __str__(self):
+        """
+        Display in console with specified format.
+        :return: display string
+        """
+        return "(computing_resource: {}, throughput: {}, latency: {}, update throughput: {}, process latency: {}, from {}->{}, time: {}, TTL: {})".format(
+            self.computing_resource,
+            self.tp,
+            self.latency, self.update_tp,
+            self.process_latency,
+            self.s, self.d, self.time, self.TTL)
+
+    def set_state(self, sfc_index: int, new_state: State):
+        """
+        Setting up new state
+        :param new_state: new state
+        :return: nothing
+        """
+        Monitor.state_transition(sfc_index, self.state, new_state)
+        self.state = new_state
+
+
+class Model(BaseObject):
+    '''
+    This class is denoted as the model, a model contains following:
+    1. the topology of the whole network
+    2. the ordered SFCs need to be deployed
+    '''
+
+    def __init__(self, topo: nx.Graph, sfc_list: List[SFC]):
+        '''
+        Initialization
+        :param topo: network topology
+        :param sfc_list: SFCs set
+        '''
+        self.topo = topo
+        self.sfc_list = sfc_list
+
+    def __str__(self):
+        '''
+        Display in console with specified format.
+        :return: display string
+        '''
+        return "TOPO-nodes:\n{}\nTOPO-edges:\n{}\nSFCs:\n{}".format(self.topo.nodes.data(), self.topo.edges.data(),
+                                                                    self.sfc_list)
+
+class DecisionMaker(BaseObject):
+    '''
+    The class used to make deploy decision
+    '''
+
+    def __init__(self):
+        super(DecisionMaker, self).__init__()
+
+    def is_path_throughput_met(self, model: Model, path: List, throughput: int, cur_sfc_type: SFCType, test_env: TestEnv):
+        """
+        Determine if the throughput requirement of the given path is meet based on current sfc type
+        :param model: given model
+        :param path: given path
+        :param throughput: given throughput requirement
+        :param cur_sfc_type: current sfc type
+        :return: true or false
+        """
+        if cur_sfc_type == SFCType.Active:
+            for i in range(len(path) - 1):
+                if model.topo[path[i]][path[i + 1]]["bandwidth"] - model.topo[path[i]][path[i + 1]]["reserved"] - \
+                        model.topo[path[i]][path[i + 1]]["active"] < throughput:
+                    return False
+            return True
+        else:
+            for i in range(len(path) - 1):
+                if test_env == TestEnv.Aggressive:
+                    if model.topo[path[i]][path[i + 1]]["bandwidth"] < throughput:
+                        return False
+                if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
+                    if model.topo[path[i]][path[i + 1]]["bandwidth"] - model.topo[path[i]][path[i + 1]][
+                        "active"] < throughput:
+                        return False
+                if test_env == TestEnv.FullyReservation:
+                    if model.topo[path[i]][path[i + 1]]["bandwidth"] - model.topo[path[i]][path[i + 1]]["reserved"] - \
+                            model.topo[path[i]][path[i + 1]]["active"] < throughput:
+                        return False
+            return True
+
+    def is_path_latency_met(self, model: Model, path_s2c: List, path_c2d: List, latency: float):
+        """
+        Determine if the latency requirement of the given path is meet
+        :param model: given model
+        :param path_s2c: given path from start server to current server
+        :param path_c2d: given path from current server to destination server
+        :param latency: given latency
+        :return: true or false
+        """
+        path_latency = 0
+        for i in range(len(path_s2c) - 1):
+            path_latency += model.topo[path_s2c[i]][path_s2c[i + 1]]["latency"]  # calculate latency of path
+        for i in range(len(path_c2d) - 1):
+            path_latency += model.topo[path_c2d[i]][path_c2d[i + 1]]["latency"]  # calculate latency of path
+        if path_latency <= latency:
+            return True
+        return False
+
+    def verify_active(self, model: Model, cur_sfc_index: int, cur_server_index: int, test_env: TestEnv):
+        """
+        Verify if current active sfc can be put on current server based on following two principles
+        1. if the remaining computing resource is still enough for this sfc
+        2. if available paths still exist
+        Both these two principles are met can return true, else false
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param cur_server_index: current server index
+        :return: true or false
+        """
+
+        # principle 1
+        if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] - \
+                model.topo.nodes[cur_server_index]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
+            return False
+
+        # principle 2
+        for path_s2c in nx.all_simple_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
+            for path_c2d in nx.all_simple_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
+                remain_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].process_latency
+                if self.is_path_latency_met(model, path_s2c, path_c2d, remain_latency) and self.is_path_throughput_met(model,path_s2c,model.sfc_list[cur_sfc_index].tp,SFCType.Active,test_env) and self.is_path_throughput_met(model,path_c2d,model.sfc_list[cur_sfc_index].tp,SFCType.Active,test_env) :
+                    return True
+
+    def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int, test_env: TestEnv):
+        """
+        Verify if current stand-by sfc can be put on current server based on following three principles
+        1. if the remaining computing resource is still enough for this sfc
+        2. if available paths still exist
+        3. if available paths for updating still exist
+        Both these three principles are met can return true, else false
+        When the active instance is deployed, the topology will change and some constraints may not be met, but this is just a really small case so that we don't have to consider it.
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param active_server_index: active server index
+        :param cur_server_index: current server index
+        :return: true or false
+        """
+        assert test_env != TestEnv.NoBackup
+
+        # principle 1
+        if test_env == TestEnv.Aggressive:
+            if model.topo.nodes[cur_server_index]["computing_resource"] < model.sfc_list[
+                cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
+            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] < \
+                    model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.FullyReservation:
+            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] - \
+                    model.topo.nodes[cur_server_index]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+
+        # principle 2
+        principle2 = False
+        for path_s2c in nx.all_simple_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
+            for path_c2d in nx.all_simple_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
+                if self.is_path_latency_met(model, path_s2c, path_c2d,
+                                            model.sfc_list[cur_sfc_index].latency - model.sfc_list[
+                                                cur_sfc_index].process_latency) and self.is_path_throughput_met(model,
+                                                                                                                path_s2c,
+                                                                                                                model.sfc_list[
+                                                                                                                    cur_sfc_index].tp,
+                                                                                                                SFCType.Standby, test_env) and self.is_path_throughput_met(model,
+                                                                                                                path_c2d,
+                                                                                                                model.sfc_list[
+                                                                                                                    cur_sfc_index].tp,
+                                                                                                                SFCType.Standby, test_env):
+                    principle2 = True
+        if not principle2:
+            return False
+
+        # principle 3
+        for path in nx.all_simple_paths(model.topo, active_server_index, cur_server_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active, test_env):
+                return True
+        return False
+
+    def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+        '''
+        Used to narrow available decision set
+        :param model: model
+        :param cur_sfc_index: cur processing sfc index
+        :return: decision sets
+        '''
+        desision_set = set()
+        for i in range(len(model.topo.nodes)):
+            if not self.verify_active(model, cur_sfc_index, i, test_env):
+                continue
+            if test_env == TestEnv.NoBackup:
+                desision_set.add(Decision(i, -1))
+                continue
+            for j in range(len(model.topo.nodes)):
+                if self.verify_standby(model, cur_sfc_index, i, j, test_env):
+                    desision_set.add(Decision(i, j))
+        return desision_set
+
+    def make_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+        '''
+        make deploy decisions
+        :param model: the model
+        :param state: current state
+        :param cur_sfc_index: cur index of sfc
+        :param cur_vnf_index: cur index of vnf
+        :return: if success, return the decision list, else return False
+        '''
+        decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
+        if len(decisions) == 0:
+            return False
+        else:
+            decision = self.select_decision_from_decisions(decisions)
+            paths = self.select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
+            if test_env != TestEnv.NoBackup:
+                decision.set_active_path_s2c(paths[0][0])
+                decision.set_active_path_c2d(paths[0][1])
+                decision.set_standby_path_s2c(paths[1][0])
+                decision.set_standby_path_c2d(paths[1][1])
+                decision.set_update_path(paths[2])
+            else:
+                decision.set_active_path_s2c(paths[0])
+                decision.set_active_path_c2d(paths[1])
+            return decision
+
+    def select_decision_from_decisions(self, decisions: set):
+        decision = random.sample(decisions, 1)[0]
+        return decision
+
+    def select_path(self, path_set: List, coupled: bool):
+        '''
+        select path from paths
+        :param paths: path list
+        :return: if success, return the path selected, else return False
+        '''
+        assert len(path_set) is not 0
+
+        if not coupled:
+            min = float("inf")
+            min_path = []
+            for path in path_set:
+                length = len(path)
+                if length < min:
+                    min = length
+                    min_path = path
+            return min_path
+        else:
+            min = float("inf")
+            min_path = []
+            for path_item in path_set:
+                length = len(path_item[0]) + len(path_item[1])
+                if length < min:
+                    min = length
+                    min_path = path_item
+            return min_path
+
+    def select_paths(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+        '''
+        select paths for determined active instance server index and stand-by instance server index
+        :param model: model
+        :param sfc_index: sfc index
+        :param active_index: active server index
+        :param standby_index: stand-by server index
+        :param test_env: test environment
+        :return: select path
+        '''
+        if test_env == TestEnv.NoBackup:
+            active_paths = []
+            for active_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
+                for active_c2d in nx.all_simple_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
+                    if self.is_path_latency_met(model, active_s2c, active_c2d,
+                                                model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                    sfc_index].process_latency) and self.is_path_throughput_met(model,
+                                                                                                                active_s2c,
+                                                                                                                model.sfc_list[
+                                                                                                                    sfc_index].tp,
+                                                                                                                SFCType.Active,
+                                                                                                                test_env) and self.is_path_throughput_met(
+                        model,
+                        active_c2d,
+                        model.sfc_list[
+                            sfc_index].tp,
+                        SFCType.Active, test_env):
+                        active_paths.append([active_s2c, active_c2d])
+            assert len(active_paths) is not 0
+            active_path = self.select_path(active_paths, True)
+            return active_path
+
+
+        # calculate paths for active instance
+        active_paths = []
+        for active_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
+            for active_c2d in nx.all_simple_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
+                if self.is_path_latency_met(model, active_s2c, active_c2d,
+                                            model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                sfc_index].process_latency) and self.is_path_throughput_met(model,
+                                                                                                                active_s2c,
+                                                                                                                model.sfc_list[
+                                                                                                                    sfc_index].tp,
+                                                                                                                SFCType.Active, test_env) and self.is_path_throughput_met(model,
+                                                                                                                active_c2d,
+                                                                                                                model.sfc_list[
+                                                                                                                    sfc_index].tp,
+                                                                                                                SFCType.Active, test_env):
+                    active_paths.append([active_s2c, active_c2d])
+        assert len(active_paths) is not 0
+
+        # calculate paths for stand-by instance
+        standby_paths = []
+        for standby_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, standby_index):
+            for standby_c2d in nx.all_simple_paths(model.topo, standby_index, model.sfc_list[sfc_index].d):
+                if self.is_path_latency_met(model, standby_s2c, standby_c2d,
+                                            model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                sfc_index].process_latency) and self.is_path_throughput_met(model,
+                                                                                                                standby_s2c,
+                                                                                                                model.sfc_list[
+                                                                                                                    sfc_index].tp,
+                                                                                                                SFCType.Standby, test_env) and self.is_path_throughput_met(model,
+                                                                                                                standby_c2d,
+                                                                                                                model.sfc_list[
+                                                                                                                    sfc_index].tp,
+                                                                                                                SFCType.Standby, test_env):
+                    standby_paths.append([standby_s2c, standby_c2d])
+        assert len(standby_paths) is not 0
+
+        # calculate paths for updating
+        update_paths = []
+        for path in nx.all_simple_paths(model.topo, active_index, standby_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+                update_paths.append(path)
+        assert len(update_paths) is not 0
+
+        # select path
+        active_path = self.select_path(active_paths, True)
+        standby_path = self.select_path(standby_paths, True)
+        update_path = self.select_path(update_paths, False)
+
+        return [active_path, standby_path, update_path]
+
+
+class RandomDecisionMaker(DecisionMaker):
+    '''
+    The class used to make random decision
+    '''
+
+    def __init__(self):
+        super(RandomDecisionMaker, self).__init__()
+
+    def select_decision_from_decisions(self, decisions: set):
+        decision = random.sample(decisions, 1)[0]
+        return decision
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Batch(object):
@@ -432,393 +951,6 @@ class CriticNet(nn.Module):
         self.layer1.weight.data = fanin_init(self.layer1.weight.data.size())
         self.layer2.weight.data = fanin_init(self.layer2.weight.data.size())
         self.layer3.weight.data.uniform_(-init_w, init_w)
-
-
-@unique
-class State(Enum):
-    expired = 0
-    failed = 1
-    running = 2
-    deploying = 3
-    future = 4
-
-
-class VNF(BaseObject):
-    '''
-    This class is denoted as a VNF
-    '''
-
-    def __init__(self, latency: float, computing_resource: int):
-        '''
-        Initialization
-        :param latency: the init latency processed
-        :param computing_resource: the init computing_resource requirement processed
-        '''
-        self.latency = latency
-        self.computing_resource = computing_resource
-        self.deploy_decision = -1  # -1 represents not deployed
-
-    def __str__(self):
-        return "(%f, %d)" % (self.latency, self.computing_resource)
-
-
-class SFC(BaseObject):
-    '''
-    This class is denoted as a SFC
-    '''
-
-    def __init__(self, vnf_list: List[VNF], latency: float, throughput: int, s: int, d: int, time: float, TTL: int):
-        '''
-        Initialization
-        :param vnf_list: the VNFs contained
-        :param latency: totally latency required
-        :param throughput: totally throughput required
-        :param s: start
-        :param d: destination
-        :param time: arriving time
-        :param TTL: time to live
-        '''
-        self.vnf_list = vnf_list
-        self.latency = latency
-        self.throughput = throughput
-        self.s = s
-        self.d = d
-        self.time = time
-        self.TTL = TTL
-        self.state = State.future
-
-        self.latency_occupied = 0  # including VNF process latency
-        self.paths_occupied = []  # links occupied, the throughput occupied must be released, each list item is a tuple of edge such as (1, 2) denote the edge from 1->2 or 2->1
-
-    def __len__(self):
-        return len(self.vnf_list)
-
-    def __getitem__(self, index):
-        return self.vnf_list[index]
-
-    def __setitem__(self, index, value):
-        self.vnf_list[index] = value
-
-    def __str__(self):
-        '''
-        Display in console with specified format.
-        :return: display string
-        '''
-        return "(VNFs: {}, latency: {}, throughput: {}, from {}->{}, time: {}, TTL: {})".format(self.vnf_list,
-                                                                                                self.latency,
-                                                                                                self.throughput, self.s,
-                                                                                                self.d,
-                                                                                                self.time, self.TTL)
-
-
-class Model(BaseObject):
-    '''
-    This class is denoted as the model, a model contains following:
-    1. the topology of the whole network
-    2. the ordered SFCs need to be deployed
-    '''
-
-    def __init__(self, topo: nx.Graph, sfc_list: List[SFC]):
-        '''
-        Initialization
-        :param topo: network topology
-        :param sfc_list: SFCs set
-        '''
-        self.topo = topo
-        self.sfc_list = sfc_list
-
-    def __str__(self):
-        '''
-        Display in console with specified format.
-        :return: display string
-        '''
-        return "TOPO-nodes:\n{}\nTOPO-edges:\n{}\nSFCs:\n{}".format(self.topo.nodes.data(), self.topo.edges.data(),
-                                                                    self.sfc_list)
-
-    def occupy_path(self, path: Path, throughput: int):
-        '''
-        occupy the bandwidth of path
-        :param path: given path
-        :param throughput: given throughput
-        :return: nothing
-        '''
-        for i in range(len(path.path) - 1):
-            self.topo[path.path[i]][path.path[i + 1]]["bandwidth"] -= throughput
-            Monitor.bandwidth_change(path.path[i], path.path[i + 1],
-                                     self.topo[path.path[i]][path.path[i + 1]]["bandwidth"] + throughput,
-                                     self.topo[path.path[i]][path.path[i + 1]]["bandwidth"])
-
-    def revert_failed(self, failed_sfc_index: int, failed_vnf_index: int):
-        '''
-        deal with deploy failed condition, revert the state of vnf and topo
-        :param failed_sfc_index: the index of failed sfc
-        :param failed_vnf_index: the index of failed vnf
-        :return: nothing
-        '''
-        # computing resource
-        for i in range(0, failed_vnf_index):
-            before = self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"]
-            self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"] += \
-            self.sfc_list[failed_sfc_index].vnf_list[i].computing_resource
-            after = self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"]
-            Monitor.computing_resource_change(self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision, before,
-                                              after)
-        # bandwidth
-        for path in self.sfc_list[failed_sfc_index].paths_occupied:
-            for i in range(len(path.path) - 1):
-                before = self.topo[path.path[i]][path.path[i + 1]]["bandwidth"]
-                self.topo[path.path[i]][path.path[i + 1]]["bandwidth"] += self.sfc_list[failed_sfc_index].throughput
-                after = self.topo[path.path[i]][path.path[i + 1]]["bandwidth"]
-                Monitor.bandwidth_change(path.path[i], path.path[i + 1], before, after)
-        # state
-        self.sfc_list[failed_sfc_index].state = State.failed
-        Monitor.change_failed(failed_sfc_index)
-
-
-class DecisionMaker(ABC):
-    '''
-    The class used to make deploy decision
-    '''
-
-    def __init__(self):
-        super(DecisionMaker, self).__init__()
-
-    def is_path_throughtput_available(self, model: Model, path: List, throughput: int):
-        '''
-        Determine if the throughput requirement of the given path is meet
-        :param model: given model
-        :param path: given path
-        :param throughput: given throughput requirement
-        :return: true or false
-        '''
-        for i in range(len(path) - 1):
-            if model.topo[path[i]][path[i + 1]]["bandwidth"] < throughput:
-                return False
-        return True
-
-    def path_latency(self, model: Model, path: List):
-        '''
-        Determine if the latency requirement of the given path is meet
-        :param model: given model
-        :param path: given path
-        :return: latency of given path
-        '''
-        path_latency = 0
-        for i in range(len(path) - 1):
-            path_latency += model.topo[path[i]][path[i + 1]]["latency"]  # calculate latency of path
-        return path_latency
-
-    def is_throughput_and_latency_available(self, model: Model, server_id: int, cur_sfc_index: int, cur_vnf_index: int):
-        '''
-        Determine if node server_id has enough throughput and latency.
-        Requirements:
-            throughput:
-                1. from pre -> cur
-            latency:
-                1. req - ocu - VNFs process latency - cur path latency >= 0
-        if pre == cur:
-            only need to meet latency1
-        else:
-            need to meet thoughput1 and latency1
-        :param model: model
-        :param server_id: the server which current vnf will be placed on
-        :param cur_sfc_index: the current index of sfc
-        :param cur_vnf_index: the current index of vnf
-        :return: false(can't be placed) or true
-        '''
-
-        # if deploy first vnf
-        pre_server_id = model.sfc_list[cur_sfc_index].s if cur_vnf_index == 0 else model.sfc_list[cur_sfc_index][
-            cur_vnf_index - 1].deploy_decision
-
-        # if deploy final vnf/ determine final_latency
-        final_latency = 0
-        if cur_vnf_index == len(model.sfc_list[cur_sfc_index]) - 1:
-            if server_id != model.sfc_list[cur_sfc_index].d:  # the server_id isn't the destination node
-                final_latency = float("inf")
-                for path in nx.all_simple_paths(model.topo, server_id, model.sfc_list[
-                    cur_sfc_index].d):  # the server_id is not the destination node
-                    cur_latency = self.path_latency(model, path)
-                    if cur_latency < final_latency and self.is_path_throughtput_available(model, path, model.sfc_list[
-                        cur_sfc_index].throughput):
-                        final_latency = cur_latency
-
-        # deploy on the same server
-        if pre_server_id == server_id:
-            cur_sfc_index
-            #  latency1 requirement
-            process_latency = 0
-            for i in range(cur_vnf_index, len(model.sfc_list[cur_sfc_index])):
-                process_latency += model.sfc_list[cur_sfc_index][i].latency
-            slack_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[
-                cur_sfc_index].latency_occupied - process_latency - final_latency  # calculate residual/slack latency
-            return True if slack_latency >= 0 else False
-
-        # deploy on the different server
-        path_available = 0
-        for path in nx.all_simple_paths(model.topo, pre_server_id, server_id):
-            # determine if throughput1 is available
-            throughput_flag = 1
-            for i in range(len(path) - 1):
-                if model.topo[path[i]][path[i + 1]]["bandwidth"] < model.sfc_list[cur_sfc_index].throughput:
-                    throughput_flag = 0
-                    break
-
-            if throughput_flag == 0:
-                continue
-
-            # determine if latency1 is available
-            path_latency = 0
-            process_latency = 0
-            for i in range(len(path) - 1):
-                path_latency += model.topo[path[i]][path[i + 1]]["latency"]  # calculate latency of path
-
-            for i in range(cur_vnf_index, len(model.sfc_list[cur_sfc_index])):
-                process_latency += model.sfc_list[cur_sfc_index][i].latency  # calculate latency of processing
-
-            slack_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[
-                cur_sfc_index].latency_occupied - process_latency - path_latency - final_latency  # calculate residual/slack latency
-
-            latency_flag = 1 if slack_latency >= 0 else 0
-
-            if latency_flag == 1:
-                path_available = 1
-                break
-        return True if path_available else False
-
-    def available_paths(self, model: Model, start_server_id: int, destination_server_id: int, cur_sfc_index: int,
-                        cur_vnf_index: int):
-        '''
-        Return all the available paths from one server to another in current vnf
-        Note: When call this, remember to make sure the two server is not the same
-        :param model: model
-        :param start_server_id: start server id
-        :param destination_server_id: destination server id
-        :param cur_sfc_index: index of current sfc
-        :param cur_vnf_index: index of current vnf
-        :return: all the available paths
-        '''
-
-        assert start_server_id != destination_server_id
-        paths = []
-        for path in nx.all_simple_paths(model.topo, start_server_id, destination_server_id):
-            # determine if throughput1 is available
-            if self.is_path_throughtput_available(model, path, model.sfc_list[cur_sfc_index].throughput):
-                # calculate latency of path
-                path_latency = 0
-                for i in range(len(path) - 1):
-                    path_latency += model.topo[path[i]][path[i + 1]]["latency"]  # calculate latency of path
-
-                # calculate latency of processing
-                process_latency = 0
-                for i in range(cur_vnf_index, len(model.sfc_list[cur_sfc_index])):
-                    process_latency += model.sfc_list[cur_sfc_index][i].latency  # calculate latency of processing
-
-                # if deploy final vnf/ determine final_latency
-                final_latency = 0
-                if cur_vnf_index == len(model.sfc_list[cur_sfc_index]) - 1:
-                    if destination_server_id != model.sfc_list[
-                        cur_sfc_index].d:  # the server_id isn't the destination node
-                        final_latency = float("inf")
-                        for path in nx.all_simple_paths(model.topo, destination_server_id, model.sfc_list[
-                            cur_sfc_index].d):  # the server_id is not the destination node
-                            cur_latency = self.path_latency(model, path)
-                            if cur_latency < final_latency and self.is_path_throughtput_available(model, path,
-                                                                                                  model.sfc_list[
-                                                                                                      cur_sfc_index].throughput):
-                                final_latency = cur_latency
-
-                # calculate slack latency
-                slack_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[
-                    cur_sfc_index].latency_occupied - process_latency - path_latency - final_latency  # calculate residual/slack latency
-
-                if slack_latency >= 0:
-                    paths.append(Path(start_server_id, destination_server_id, path, path_latency))
-
-        return paths
-
-    def narrow_node_set(self, model: Model, cur_sfc_index: int, cur_vnf_index: int):
-        '''
-        Used to narrow available node set
-        :param model: model
-        :param cur_sfc_index: cur processing sfc index
-        :param cur_vnf_index: cur processing vnf index
-        :return: server sets
-        '''
-        server_set = []
-        for i in range(len(model.topo.nodes)):
-            if model.topo.nodes[i]["computing_resource"] >= model.sfc_list[cur_sfc_index][
-                cur_vnf_index].computing_resource and self.is_throughput_and_latency_available(model, i, cur_sfc_index,
-                                                                                               cur_vnf_index):
-                server_set.append(i)
-        return server_set
-
-    def shortest_path(self, model: Model, start_index: int, destination_index: int):
-        '''
-        return the shortest path
-        :param model: given model
-        :param start_index: index of start server
-        :param destination_index: index of destination server
-        :return: shortest path or False
-        '''
-        final_latency = float("inf")
-        final_path = False
-        for path in nx.all_simple_paths(model.topo, start_index,
-                                        destination_index):  # the server_id is not the destination node
-            cur_latency = self.path_latency(model, path)
-            if cur_latency < final_latency:
-                final_latency = cur_latency
-                final_path = Path(start_index, destination_index, path, final_latency)
-        return final_path
-
-    @abstractmethod
-    def make_decision(self, model: Model, state: State, cur_sfc_index: int, cur_vnf_index: int):
-        '''
-        make deploy decisions
-        :param model: the model
-        :param state: current state
-        :param cur_sfc_index: cur index of sfc
-        :param cur_vnf_index: cur index of vnf
-        :return: if success, return the decision list, else return False
-        '''
-        raise VirtualException()
-
-    @abstractmethod
-    def select_path(self, paths: List[Path]):
-        '''
-        select path from paths
-        :param paths: path list
-        :return: if success, return the path selected, else return False
-        '''
-        raise VirtualException()
-
-
-class RandomDecisionMaker(DecisionMaker):
-    '''
-    The class used to make random decision
-    '''
-
-    def __init__(self):
-        super(RandomDecisionMaker, self).__init__()
-
-    def make_decision(self, model: Model, state: State, cur_sfc_index: int, cur_vnf_index: int):
-        # First, narrow the available nodes set
-        available_node_set = self.narrow_node_set(model, cur_sfc_index, cur_vnf_index)
-        if len(available_node_set) == 0:
-            return False
-        else:
-            return random.sample(available_node_set, 1)
-
-    def select_path(self, paths: List[Path]):
-        '''
-        select path from paths
-        :param paths: path list
-        :return: path selected or false
-        '''
-        if len(paths) == 0:
-            return False
-        else:
-            return random.sample(paths, 1)[0]
 
 
 # test

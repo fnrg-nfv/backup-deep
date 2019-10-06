@@ -10,6 +10,7 @@ warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 fig, ax = plt.subplots()
 fig.set_tight_layout(False)
 
+
 def generate_topology(size=100):
     '''
     Function used to generate topology.
@@ -20,14 +21,15 @@ def generate_topology(size=100):
     topo = nx.Graph()
     # generate V
     for i in range(size):
-        topo.add_node(i, computing_resource=random.randint(4000, 8000))
+        computing_resource = random.randint(4000, 8000)
+        topo.add_node(i, computing_resource=computing_resource, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
     # generate E
     for i in range(size):
         for j in range(i + 1, size):
             if random.randint(1, 5) == 1:
-                topo.add_edge(i, j, bandwidth=random.randint(1000, 10000), latency=random.uniform(2, 5))
+                bandwidth = random.randint(1000, 10000)
+                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs=set())
     return topo
-
 
 
 def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
@@ -42,23 +44,22 @@ def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
     nodes_len = len(topo.nodes)
 
     # list of sample in increasing order
-    timeshot_list = sampler.uniform(0, duration, size)
+    timeslot_list = sampler.uniform(0, duration, size)
 
     # generate each sfc
     for i in range(size):
-        n = random.randint(5, 10) # the number of VNF
-        TTL = random.randint(5, 10) # sfc's time to live
-        vnf_list = []
-
-        # generate each vnf
-        for j in range(n):
-            # TODO: the latency of VNF could be larger, and the computing_resource is very important
-            vnf_list.append(VNF(latency=random.uniform(0.045, 0.3), computing_resource=random.randint(500, 1000)))
+        computing_resource = random.randint(3750, 7500)
+        tp = random.randint(32, 128)
+        latency = random.randint(10, 30)
+        update_tp = tp
+        process_latency = random.uniform(0.863, 1.725)
+        TTL = random.randint(5, 10)  # sfc's time to live
         s = random.randint(1, nodes_len - 1)
         d = random.randint(1, nodes_len - 1)
-        # TODO: the throughput requirement is very important
-        sfc_list.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(32, 128), s=s, d=d, time=timeshot_list[i], TTL=TTL))
+        sfc_list.append(SFC(computing_resource, tp, latency, update_tp, process_latency, s, d, timeslot_list[i], TTL))
+
     return sfc_list
+
 
 def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 100):
     '''
@@ -71,6 +72,7 @@ def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 10
     sfc_list = generate_sfc_list(topo=topo, size=sfc_size, duration=duration)
     return Model(topo, sfc_list)
 
+
 # test
 def __main():
     topo = generate_topology()
@@ -80,6 +82,7 @@ def __main():
     print(topo[0])
     nx.draw(topo, with_labels=True)
     plt.show()
+
 
 if __name__ == '__main__':
     __main()
