@@ -21,12 +21,12 @@ def generate_topology(size=100):
     topo = nx.Graph()
     # generate V
     for i in range(size):
-        computing_resource = random.randint(4000, 8000)
+        computing_resource = random.randint(40000, 80000)
         topo.add_node(i, computing_resource=computing_resource, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
     # generate E
     for i in range(size):
         for j in range(i + 1, size):
-            if random.randint(1, 5) == 1:
+            if random.randint(1, 3) == 1:
                 bandwidth = random.randint(1000, 10000)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs=set())
     return topo

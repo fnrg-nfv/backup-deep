@@ -1,37 +1,8 @@
 # backup-deep
 
-## Motivation
+A backup nfv-p problem solution based on deep reinforcement learning.
 
-- Dynamic, flexible with DRL;
+For more detailed summary:
 
-## Design
-
-### Problem Statement
-
-- With back-up instances;
-- VNF-based, not SFC;
-- Server/Host, not DC with inbound link.
-
-### System Model
-
-- Time-based, not event-based;
-- Target: maximize throughput;
-- Reconsider Rearrangement. 
-
-### Learning Algorithm
-
-- Online, Off-policy(DDPG);
-- Use deterministic has
-
-### Some Tricks
-
-- Arriving SFC stream distribution; 
-
-## Implementation
-
-## Evaluation
-
-## Conclusion
-
-## Summary
+[Documentation for backup-deep](https://github.com/fnrg-nfv/backup-deep/tree/master/doc)
 
