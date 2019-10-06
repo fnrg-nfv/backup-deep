@@ -22,6 +22,14 @@ class BaseObject(object):
         return self.__str__()
 
 @unique
+class BrokenReason(Enum):
+    NoReason = 0
+    TimeExpired = 1
+    StandbyDamage = 2
+    StandbyStartFailed = 3
+
+
+@unique
 class State(Enum):
     Undeployed = 0
     Failed = 1
@@ -115,16 +123,19 @@ class Monitor(BaseObject):
     format_logs = []
 
     @classmethod
-    def state_transition(cls, sfc_index: int, pre_state: State, new_state: State):
+    def state_transition(cls, time: int, sfc_index: int, pre_state: State, new_state: State, reason: BrokenReason = BrokenReason.NoReason):
         """
         Handle the state transition condition
         :param pre_state: previous state
         :param new_state: new state
         :return: nothing
         """
-        cls.log("")
-        cls.log("The state of SFC {} changes from {} to {}".format(sfc_index, pre_state, new_state))
-        cls.format_log([sfc_index, pre_state, new_state])
+        if reason == BrokenReason.NoReason:
+            cls.log("At time {}, the state of SFC {} changes from {} to {}".format(time, sfc_index, pre_state, new_state))
+            cls.format_log([time, sfc_index, pre_state, new_state])
+        else:
+            cls.log("At time {}, the state of SFC {} changes from {} to {}, for {}".format(time, sfc_index, pre_state, new_state, reason))
+            cls.format_log([time, sfc_index, pre_state, new_state, reason])
 
     @classmethod
     def log(cls, content: str):
@@ -133,24 +144,6 @@ class Monitor(BaseObject):
     @classmethod
     def format_log(cls, content: List):
         cls.format_logs.append(content)
-
-    @classmethod
-    def change_failed(cls, sfc_index: int):
-        cls.log("")
-        cls.log("The state of SFC {} changes to Failed".format(sfc_index))
-
-    @classmethod
-    def change_normal(cls, sfc_index: int):
-        cls.log("The state of SFC {} changes to Normal".format(sfc_index))
-
-    @classmethod
-    def change_backup(cls, sfc_index: int):
-        cls.log("The state of SFC {} changes to Backup".format(sfc_index))
-
-    @classmethod
-    def change_broken(cls, sfc_index: int):
-        cls.log("")
-        cls.log("The state of SFC {} changes to Broken".format(sfc_index))
 
     @classmethod
     def deploy_server(cls, sfc_index: int, server_id: int):
@@ -184,6 +177,8 @@ class Monitor(BaseObject):
             print(item)
 
 
+
+
 class Instance(BaseObject):
     """
     This class is denoted as an instance.
@@ -191,6 +186,12 @@ class Instance(BaseObject):
     def __init__(self, sfc_index: int, is_active: bool):
         self.sfc_index = sfc_index
         self.is_active = is_active
+
+    def __str__(self):
+        if self.is_active:
+            return "Server {} active instance".format(self.sfc_index)
+        else:
+            return "Server {} stand-by instance".format(self.sfc_index)
 
 
 class ACSFC(BaseObject):
@@ -264,13 +265,13 @@ class SFC(BaseObject):
             self.process_latency,
             self.s, self.d, self.time, self.TTL)
 
-    def set_state(self, sfc_index: int, new_state: State):
+    def set_state(self, time: int, sfc_index: int, new_state: State, reason: BrokenReason = BrokenReason.NoReason):
         """
         Setting up new state
         :param new_state: new state
         :return: nothing
         """
-        Monitor.state_transition(sfc_index, self.state, new_state)
+        Monitor.state_transition(time, sfc_index, self.state, new_state, reason)
         self.state = new_state
 
 

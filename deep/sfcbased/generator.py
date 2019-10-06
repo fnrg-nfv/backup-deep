@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import random
 import warnings
 import matplotlib.cbook
+import math
 
 from model import *
 import sampler
@@ -26,7 +27,7 @@ def generate_topology(size=100):
     # generate E
     for i in range(size):
         for j in range(i + 1, size):
-            if random.randint(1, 3) == 1:
+            if random.randint(1, 5) == 1:
                 bandwidth = random.randint(1000, 10000)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs=set())
     return topo
@@ -71,6 +72,28 @@ def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 10
     topo = generate_topology(size=topo_size)
     sfc_list = generate_sfc_list(topo=topo, size=sfc_size, duration=duration)
     return Model(topo, sfc_list)
+
+def generate_failed_instances_time_slot(model: Model, error_rate: float):
+    """
+    Random generate failed instances
+    :param model: model
+    :param error_rate: error rate
+    :return: list of instance
+    """
+    assert error_rate <= 1
+
+    # get all running instances
+    all_running_instances = []
+    for i in range(len(model.sfc_list)):
+        if model.sfc_list[i].state == State.Normal:
+            all_running_instances.append(Instance(i, True))
+        if model.sfc_list[i].state == State.Backup:
+            all_running_instances.append(Instance(i, False))
+
+    # random select
+    sample_num = math.floor(len(all_running_instances) * error_rate)
+    failed_instances = random.sample(all_running_instances, sample_num)
+    return failed_instances
 
 
 # test

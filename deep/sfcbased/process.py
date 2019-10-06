@@ -22,14 +22,14 @@ def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: i
 
                 # Undeployed→Failed
                 if not decision:
-                    model.sfc_list[i].set_state(i, State.Failed)
+                    model.sfc_list[i].set_state(time, i, State.Failed)
 
                 # Undeployed→Normal
                 else:
                     model.sfc_list[i].active_sfc.server = decision.active_server
                     model.sfc_list[i].standby_sfc.server = decision.standby_server
                     deploy_active(model, i, test_env)
-                    model.sfc_list[i].set_state(i, State.Normal)
+                    model.sfc_list[i].set_state(time, i, State.Normal)
 
     # with backup
     else:
@@ -41,7 +41,7 @@ def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: i
 
                 # Undeployed→Failed
                 if not decision:
-                    model.sfc_list[i].set_state(i, State.Failed)
+                    model.sfc_list[i].set_state(time, i, State.Failed)
 
                 # Undeployed→Normal
                 else:
@@ -54,7 +54,7 @@ def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: i
                     model.sfc_list[i].update_path = decision.update_path
                     deploy_active(model, i, test_env)
                     deploy_standby(model, i, test_env)
-                    model.sfc_list[i].set_state(i, State.Normal)
+                    model.sfc_list[i].set_state(time, i, State.Normal)
 
 
 def deploy_active(model: Model, sfc_index: int, test_env: TestEnv):
@@ -378,14 +378,14 @@ def state_tansition_and_resource_reclaim(model: Model, time: int, test_env: Test
         if model.sfc_list[index].state == State.Normal and is_active:
             active_failed(model, index, test_env)
             if standby_start(model, index, test_env):
-                model.sfc_list[index].set_state(index, State.Backup)
+                model.sfc_list[index].set_state(time, index, State.Backup)
             else:
-                model.sfc_list[index].set_state(index, State.Broken)
+                model.sfc_list[index].set_state(time, index, State.Broken, BrokenReason.StandbyStartFailed)
 
         # Backup→Broken
         elif model.sfc_list[index].state == State.Backup and not is_active:
             standby_failed(model, index, test_env)
-            model.sfc_list[index].set_state(index, State.Broken)
+            model.sfc_list[index].set_state(time, index, State.Broken, BrokenReason.StandbyDamage)
 
     # time expired condition
     for index in range(len(model.sfc_list)):
@@ -394,29 +394,7 @@ def state_tansition_and_resource_reclaim(model: Model, time: int, test_env: Test
             index].TTL < time:
             remove_expired_active(model, index, test_env)
             remove_expired_standby(model, index, test_env)
-            model.sfc_list[index].set_state(index, State.Broken)
-
-def generate_failed_instances_time_slot(model: Model, error_rate: float):
-    """
-    Random generate failed instances
-    :param model: model
-    :param error_rate: error rate
-    :return: list of instance
-    """
-    assert error_rate <= 1
-
-    # get all running instances
-    all_running_instances = set()
-    for i in range(len(model.sfc_list)):
-        if model.sfc_list[i].state == State.Normal:
-            all_running_instances.add(Instance(i, True))
-        if model.sfc_list[i].state == State.Backup:
-            all_running_instances.add(Instance(i, True))
-
-    # random select
-    failed_instances = random.sample(all_running_instances, int(len(all_running_instances) * error_rate))
-    return failed_instances
-
+            model.sfc_list[index].set_state(time, index, State.Broken, BrokenReason.TimeExpired)
 
 
 def process_time_slot(model: Model, decision_maker: DecisionMaker, time: int, test_env: TestEnv, failed_instances: List[Instance]):
