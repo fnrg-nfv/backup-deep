@@ -12,21 +12,15 @@
 - **Nodes**: Computing resource;
 - **Edges**: Bandwidth.
 
-## Notations
-## Constraints
-
-## Objectives
-
 # Solution
 
-- 建立一个基于**时序**的模型，即根据SFC的到来时间来做决定；
-- 强化学习算法只负责决定节点放置的位置，更新的链路使用贪心算法解决；
-- 使用强化学习算法进行解决。
-- 在考虑放置备份时，在当前物理资源满足的情况下：考虑**不预留资源/仅预留节点资源/预留节点资源与链路资源**；
+- Establish a time-series model that makes decisions based on the arrival time of the SFC；
+- Use the reinforcement learning algorithm to determine the location of the node to be placed, and use the greedy algorithm to determine the link occupied;
 
-## 选路算法
+## Routing algorithm
 
-找到所有满足吞吐率和延迟的路径，然后选择最短的。
+- Find all paths that meet throughput and latency requirements；
+- Choose the shortest one。
 
 ## SFC State
 
@@ -54,26 +48,6 @@ The state transition graph as following:
 - Sudden damage of the stand-by instance;
 - The stand-by instance did not start successfully when the active instance is damaged(because resource requirements are not met).
 
-## Some processes
-
-### In each time slot, handle state transition and reclaim resources
-
-**The first two transitions shouldn't be handled in this process.**
-
-- Determine which instance should failed in **previous time slot**, handle the transition: 
-
-  - Normal→Backup;
-  - Normal→Broken;
-  - Backup→Broken.
-
-  then reclaim the resource.
-
-- Determine which sfc is expired, **if the state is broken, then don't need to bother it**, for it has been handled in previous process, handle the expired condition.
-
-### When a stand-by instance need to be start
-
-- Release the reserved resources occupied by this stand-by instance;
-
 ## Test environment
 
 | Name             | Description                                                  |
@@ -88,15 +62,26 @@ The state transition graph as following:
 
 ## Action
 
-- 主要SFC放置server，即active instance；
-- 备份SFC放置server，即stand-by instance；
+- Location of active instance;
+- Location of stand-by instance;
 
-- ~~从start server到active instance的链路；~~
+- ~~The link from start server to active instance;~~
 
-- ~~从active instance到end server的链路；~~
+- ~~The link from active instance to end server;~~
 
-- ~~从start server到stand-by instance的链路；~~
+- ~~The link from start server to stand-by instance;~~
 
-- ~~从stand-by instance到end server的链路；~~
+- ~~The link from stand-by instance to end server;~~
 
-- ~~从active instance到stand-by instance的状态更新链路。~~
+- ~~The link from active instance to stand-by instance.~~
+
+# Others
+
+For classes:
+
+[Main classes](https://github.com/fnrg-nfv/backup-deep/blob/master/doc/class.md)
+
+For processes:
+
+[Main processes](https://github.com/fnrg-nfv/backup-deep/blob/master/doc/process.md)
+
