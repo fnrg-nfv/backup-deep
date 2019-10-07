@@ -1,13 +1,13 @@
 from sfcbased.model import *
 
 def detect_cur_state(model: Model, cur_sfc_index: int, cur_vnf_index: int):
-    '''
+    """
     State vector detector.
     :param model: model
     :param cur_sfc_index: current sfc index
     :param cur_vnf_index: current vnf index
     :return: detected state
-    '''
+    """
     state = []
 
     # node state

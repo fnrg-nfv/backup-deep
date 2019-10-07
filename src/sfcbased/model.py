@@ -15,11 +15,12 @@ class VirtualException(BaseException):
 
 class BaseObject(object):
     def __repr__(self):
-        '''
+        """
         When function print() is called, this function will determine what to display
         :return: the __str__() result of current instance
-        '''
+        """
         return self.__str__()
+
 
 @unique
 class BrokenReason(Enum):
@@ -57,17 +58,18 @@ class SFCType(Enum):
     Active = 0
     Standby = 1
 
+
 class Decision(BaseObject):
-    '''
+    """
     This class is denoted as a decision
-    '''
+    """
 
     def __init__(self, active_server: int, standby_server: int):
-        '''
+        """
         Initialization
         :param active_server: server index of active instance
         :param standby_server: server index of standby instance, if not backup, then -1
-        '''
+        """
         self.active_server = active_server
         self.standby_server = standby_server
         self.active_path_s2c = VariableState.Uninitialized
@@ -92,29 +94,6 @@ class Decision(BaseObject):
         self.update_path = path
 
 
-class Path(BaseObject):
-    '''
-    This class is denoted as the path from one server to another
-    '''
-
-    def __init__(self, start: int, destination: int, path: List, latency: float):
-        '''
-        This class is denoted as a path
-        :param start: start server
-        :param destination: destination server
-        :param path: path list
-        :param latency: latency requirement
-        '''
-        self.start = start
-        self.destination = destination
-        self.path = path
-        self.latency = latency
-        self.path_length = len(path)
-
-    def __str__(self):
-        return self.path.__str__()
-
-
 class Monitor(BaseObject):
     """
     Designed for Monitoring the actions of whole system
@@ -123,18 +102,24 @@ class Monitor(BaseObject):
     format_logs = []
 
     @classmethod
-    def state_transition(cls, time: int, sfc_index: int, pre_state: State, new_state: State, reason: BrokenReason = BrokenReason.NoReason):
+    def state_transition(cls, time: int, sfc_index: int, pre_state: State, new_state: State,
+                         reason: BrokenReason = BrokenReason.NoReason):
         """
         Handle the state transition condition
+        :param time: occur time
+        :param sfc_index: sfc index
         :param pre_state: previous state
         :param new_state: new state
+        :param reason: the broken reason
         :return: nothing
         """
         if reason == BrokenReason.NoReason:
-            cls.log("At time {}, the state of SFC {} changes from {} to {}".format(time, sfc_index, pre_state, new_state))
+            cls.log(
+                "At time {}, the state of SFC {} changes from {} to {}".format(time, sfc_index, pre_state, new_state))
             cls.format_log([time, sfc_index, pre_state, new_state])
         else:
-            cls.log("At time {}, the state of SFC {} changes from {} to {}, for {}".format(time, sfc_index, pre_state, new_state, reason))
+            cls.log("At time {}, the state of SFC {} changes from {} to {}, for {}".format(time, sfc_index, pre_state,
+                                                                                           new_state, reason))
             cls.format_log([time, sfc_index, pre_state, new_state, reason])
 
     @classmethod
@@ -148,10 +133,6 @@ class Monitor(BaseObject):
     @classmethod
     def deploy_server(cls, sfc_index: int, server_id: int):
         cls.log("SFC {} deploy on server {}".format(sfc_index, server_id))
-
-    @classmethod
-    def path_occupied(cls, path: Path, sfc_index: int):
-        cls.log("Path {} is occupied by SFC {}".format(path, sfc_index))
 
     @classmethod
     def active_computing_resource_change(cls, server_id: int, before: int, after: int):
@@ -177,12 +158,11 @@ class Monitor(BaseObject):
             print(item)
 
 
-
-
 class Instance(BaseObject):
     """
     This class is denoted as an instance.
     """
+
     def __init__(self, sfc_index: int, is_active: bool):
         self.sfc_index = sfc_index
         self.is_active = is_active
@@ -207,9 +187,9 @@ class ACSFC(BaseObject):
 
 
 class SBSFC(BaseObject):
-    '''
+    """
     This class is denoted as a stand-by SFC.
-    '''
+    """
 
     def __init__(self):
         self.server = VariableState.Uninitialized
@@ -268,6 +248,9 @@ class SFC(BaseObject):
     def set_state(self, time: int, sfc_index: int, new_state: State, reason: BrokenReason = BrokenReason.NoReason):
         """
         Setting up new state
+        :param sfc_index:
+        :param reason:
+        :param time: occur time
         :param new_state: new state
         :return: nothing
         """
@@ -283,21 +266,23 @@ class Model(BaseObject):
     """
 
     def __init__(self, topo: nx.Graph, sfc_list: List[SFC]):
-        '''
+        """
         Initialization
         :param topo: network topology
         :param sfc_list: SFCs set
-        '''
+        """
         self.topo = topo
         self.sfc_list = sfc_list
 
     def __str__(self):
-        '''
+        """
         Display in console with specified format.
         :return: display string
-        '''
+        """
         return "TOPO-nodes:\n{}\nTOPO-edges:\n{}\nSFCs:\n{}".format(self.topo.nodes.data(), self.topo.edges.data(),
                                                                     self.sfc_list)
+
+
 
 class DecisionMaker(BaseObject):
     """
@@ -307,13 +292,15 @@ class DecisionMaker(BaseObject):
     def __init__(self):
         super(DecisionMaker, self).__init__()
 
-    def is_path_throughput_met(self, model: Model, path: List, throughput: int, cur_sfc_type: SFCType, test_env: TestEnv):
+    @staticmethod
+    def is_path_throughput_met(model: Model, path: List, throughput: int, cur_sfc_type: SFCType, test_env: TestEnv):
         """
         Determine if the throughput requirement of the given path is meet based on current sfc type
         :param model: given model
         :param path: given path
         :param throughput: given throughput requirement
         :param cur_sfc_type: current sfc type
+        :param test_env: test environment
         :return: true or false
         """
         if cur_sfc_type == SFCType.Active:
@@ -337,7 +324,8 @@ class DecisionMaker(BaseObject):
                         return False
             return True
 
-    def is_path_latency_met(self, model: Model, path_s2c: List, path_c2d: List, latency: float):
+    @staticmethod
+    def is_path_latency_met(model: Model, path_s2c: List, path_c2d: List, latency: float):
         """
         Determine if the latency requirement of the given path is meet
         :param model: given model
@@ -361,6 +349,7 @@ class DecisionMaker(BaseObject):
         1. if the remaining computing resource is still enough for this sfc
         2. if available paths still exist
         Both these two principles are met can return true, else false
+        :param test_env:
         :param model: model
         :param cur_sfc_index: current sfc index
         :param cur_server_index: current server index
@@ -376,17 +365,25 @@ class DecisionMaker(BaseObject):
         for path_s2c in nx.all_simple_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
             for path_c2d in nx.all_simple_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
                 remain_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].process_latency
-                if self.is_path_latency_met(model, path_s2c, path_c2d, remain_latency) and self.is_path_throughput_met(model,path_s2c,model.sfc_list[cur_sfc_index].tp,SFCType.Active,test_env) and self.is_path_throughput_met(model,path_c2d,model.sfc_list[cur_sfc_index].tp,SFCType.Active,test_env) :
+                if self.is_path_latency_met(model, path_s2c, path_c2d, remain_latency) and self.is_path_throughput_met(model,
+                                                                                                                       path_s2c,
+                                                                                                                       model.sfc_list[
+                                                                                                                      cur_sfc_index].tp,
+                                                                                                                       SFCType.Active,
+                                                                                                                       test_env) and self.is_path_throughput_met(
+                        model, path_c2d, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
                     return True
 
-    def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int, test_env: TestEnv):
+    def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int,
+                       test_env: TestEnv):
         """
         Verify if current stand-by sfc can be put on current server based on following three principles
         1. if the remaining computing resource is still enough for this sfc
-        2. if available paths still exist
-        3. if available paths for updating still exist
+        2. if available paths for updating still exist
+        3. if available paths still exist
         Both these three principles are met can return true, else false
         When the active instance is deployed, the topology will change and some constraints may not be met, but this is just a really small case so that we don't have to consider it.
+        :param test_env:
         :param model: model
         :param cur_sfc_index: current sfc index
         :param active_server_index: active server index
@@ -411,6 +408,14 @@ class DecisionMaker(BaseObject):
 
         # principle 2
         principle2 = False
+        for path in nx.all_simple_paths(model.topo, active_server_index, cur_server_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active, test_env):
+                principle2 = True
+                break
+        if not principle2:
+            return False
+
+        # principle 3
         for path_s2c in nx.all_simple_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
             for path_c2d in nx.all_simple_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
                 if self.is_path_latency_met(model, path_s2c, path_c2d,
@@ -418,48 +423,44 @@ class DecisionMaker(BaseObject):
                                                 cur_sfc_index].process_latency) and self.is_path_throughput_met(model,
                                                                                                                 path_s2c,
                                                                                                                 model.sfc_list[
-                                                                                                                    cur_sfc_index].tp,
-                                                                                                                SFCType.Standby, test_env) and self.is_path_throughput_met(model,
-                                                                                                                path_c2d,
-                                                                                                                model.sfc_list[
-                                                                                                                    cur_sfc_index].tp,
-                                                                                                                SFCType.Standby, test_env):
-                    principle2 = True
-        if not principle2:
-            return False
+                                                                                                               cur_sfc_index].tp,
+                                                                                                                SFCType.Standby,
+                                                                                                                test_env) and self.is_path_throughput_met(
+                    model,
+                    path_c2d,
+                    model.sfc_list[
+                        cur_sfc_index].tp,
+                    SFCType.Standby, test_env):
+                    return True
 
-        # principle 3
-        for path in nx.all_simple_paths(model.topo, active_server_index, cur_server_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active, test_env):
-                return True
         return False
 
     def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
         """
         Used to narrow available decision set
+        :param test_env:
         :param model: model
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        desision_set = set()
+        desision_set = []
         for i in range(len(model.topo.nodes)):
             if not self.verify_active(model, cur_sfc_index, i, test_env):
                 continue
             if test_env == TestEnv.NoBackup:
-                desision_set.add(Decision(i, -1))
+                desision_set.append(Decision(i, -1))
                 continue
             for j in range(len(model.topo.nodes)):
                 if self.verify_standby(model, cur_sfc_index, i, j, test_env):
-                    desision_set.add(Decision(i, j))
+                    desision_set.append(Decision(i, j))
         return desision_set
 
     def make_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
         """
-        make deploy decisions
+        make deploy decisions, consider no backup and with backup
+        :param test_env:
         :param model: the model
-        :param state: current state
         :param cur_sfc_index: cur index of sfc
-        :param cur_vnf_index: cur index of vnf
         :return: if success, return the decision list, else return False
         """
         decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
@@ -479,34 +480,36 @@ class DecisionMaker(BaseObject):
                 decision.set_active_path_c2d(paths[1])
             return decision
 
-    def select_decision_from_decisions(self, decisions: set):
+    def select_decision_from_decisions(self, decisions: List):
         decision = random.sample(decisions, 1)[0]
         return decision
 
-    def select_path(self, path_set: List, coupled: bool):
+    @staticmethod
+    def select_path(path_set: List, coupled: bool):
         """
         select path from paths
-        :param paths: path list
+        :param path_set:
+        :param coupled:
         :return: if success, return the path selected, else return False
         """
         assert len(path_set) is not 0
 
         if not coupled:
-            min = float("inf")
+            min_value = float("inf")
             min_path = []
             for path in path_set:
                 length = len(path)
-                if length < min:
-                    min = length
+                if length < min_value:
+                    min_value = length
                     min_path = path
             return min_path
         else:
-            min = float("inf")
+            min_value = float("inf")
             min_path = []
             for path_item in path_set:
                 length = len(path_item[0]) + len(path_item[1])
-                if length < min:
-                    min = length
+                if length < min_value:
+                    min_value = length
                     min_path = path_item
             return min_path
 
@@ -520,6 +523,8 @@ class DecisionMaker(BaseObject):
         :param test_env: test environment
         :return: select path
         """
+
+        # No backup condition
         if test_env == TestEnv.NoBackup:
             active_paths = []
             for active_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
@@ -529,7 +534,7 @@ class DecisionMaker(BaseObject):
                                                     sfc_index].process_latency) and self.is_path_throughput_met(model,
                                                                                                                 active_s2c,
                                                                                                                 model.sfc_list[
-                                                                                                                    sfc_index].tp,
+                                                                                                               sfc_index].tp,
                                                                                                                 SFCType.Active,
                                                                                                                 test_env) and self.is_path_throughput_met(
                         model,
@@ -542,7 +547,6 @@ class DecisionMaker(BaseObject):
             active_path = self.select_path(active_paths, True)
             return active_path
 
-
         # calculate paths for active instance
         active_paths = []
         for active_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
@@ -550,14 +554,16 @@ class DecisionMaker(BaseObject):
                 if self.is_path_latency_met(model, active_s2c, active_c2d,
                                             model.sfc_list[sfc_index].latency - model.sfc_list[
                                                 sfc_index].process_latency) and self.is_path_throughput_met(model,
-                                                                                                                active_s2c,
-                                                                                                                model.sfc_list[
-                                                                                                                    sfc_index].tp,
-                                                                                                                SFCType.Active, test_env) and self.is_path_throughput_met(model,
-                                                                                                                active_c2d,
-                                                                                                                model.sfc_list[
-                                                                                                                    sfc_index].tp,
-                                                                                                                SFCType.Active, test_env):
+                                                                                                            active_s2c,
+                                                                                                            model.sfc_list[
+                                                                                                           sfc_index].tp,
+                                                                                                            SFCType.Active,
+                                                                                                            test_env) and self.is_path_throughput_met(
+                    model,
+                    active_c2d,
+                    model.sfc_list[
+                        sfc_index].tp,
+                    SFCType.Active, test_env):
                     active_paths.append([active_s2c, active_c2d])
         assert len(active_paths) is not 0
 
@@ -568,14 +574,16 @@ class DecisionMaker(BaseObject):
                 if self.is_path_latency_met(model, standby_s2c, standby_c2d,
                                             model.sfc_list[sfc_index].latency - model.sfc_list[
                                                 sfc_index].process_latency) and self.is_path_throughput_met(model,
-                                                                                                                standby_s2c,
-                                                                                                                model.sfc_list[
-                                                                                                                    sfc_index].tp,
-                                                                                                                SFCType.Standby, test_env) and self.is_path_throughput_met(model,
-                                                                                                                standby_c2d,
-                                                                                                                model.sfc_list[
-                                                                                                                    sfc_index].tp,
-                                                                                                                SFCType.Standby, test_env):
+                                                                                                            standby_s2c,
+                                                                                                            model.sfc_list[
+                                                                                                           sfc_index].tp,
+                                                                                                            SFCType.Standby,
+                                                                                                            test_env) and self.is_path_throughput_met(
+                    model,
+                    standby_c2d,
+                    model.sfc_list[
+                        sfc_index].tp,
+                    SFCType.Standby, test_env):
                     standby_paths.append([standby_s2c, standby_c2d])
         assert len(standby_paths) is not 0
 
@@ -595,9 +603,9 @@ class DecisionMaker(BaseObject):
 
 
 class RandomDecisionMaker(DecisionMaker):
-    '''
+    """
     The class used to make random decision
-    '''
+    """
 
     def __init__(self):
         super(RandomDecisionMaker, self).__init__()
@@ -605,18 +613,6 @@ class RandomDecisionMaker(DecisionMaker):
     def select_decision_from_decisions(self, decisions: set):
         decision = random.sample(decisions, 1)[0]
         return decision
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class Batch(object):
@@ -627,7 +623,7 @@ class Batch(object):
     def __init__(self, dataset=None, capacity=100):
         super(Batch, self).__init__()
         self.__capacity = capacity
-        if dataset == None:
+        if dataset is None:
             self.__dataset = []
         else:
             assert len(dataset) <= capacity
@@ -654,7 +650,7 @@ class Batch(object):
         return prestate_batch, action_batch, reward_batch, state_batch
 
     def add(self, element):
-        if (len(self.__dataset) < self.__capacity):
+        if len(self.__dataset) < self.__capacity:
             self.__dataset.append(element)
         else:
             self.__dataset.pop(0)

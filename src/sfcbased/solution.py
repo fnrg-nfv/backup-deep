@@ -21,12 +21,12 @@ class Configuration(object):
 
 
 def dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
-    '''
+    """
     Compute single source shortest path with dijkstra algorithm
     :param topo: network topology
     :param s: source node
     :return: shortest path
-    '''
+    """
     ret = {}
     heap = [(0, s)]
     while heap:
@@ -45,12 +45,12 @@ def dijkstra(topo: nx.Graph, s: int) -> {}:  # todo
 
 
 def generate_route_list(topo: nx.Graph, sfc: SFC):
-    '''
+    """
     Find all paths meet requirement
     :param topo: network topology
     :param sfc: SFC
     :return: route set
-    '''
+    """
     s = sfc.s
     d = sfc.d
     shortest_distance = dijkstra(topo, d)

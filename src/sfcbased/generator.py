@@ -99,7 +99,7 @@ def generate_failed_instances_time_slot(model: Model, error_rate: float):
             all_running_instances.append(Instance(i, False))
 
     # random select
-    sample_num = math.floor(len(all_running_instances) * error_rate)
+    sample_num = math.ceil(len(all_running_instances) * error_rate)
     failed_instances = random.sample(all_running_instances, sample_num)
     return failed_instances
 
