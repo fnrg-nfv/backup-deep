@@ -5,20 +5,24 @@ import torch.nn as nn
 from abc import ABC, abstractmethod
 import torch.nn.functional as F
 import random
-from utils import *
+from vnfbased.utils import *
+
 
 class VirtualException(BaseException):
     def __init__(self, _type, _func):
         BaseException(self)
 
+
 class BaseObject(object):
     def __repr__(self):
         return self.__str__()
+
 
 class Path(BaseObject):
     '''
     This class is denoted as the path from one server to another
     '''
+
     def __init__(self, start: int, destination: int, path: List, latency: float):
         '''
         This class is denoted as a path
@@ -35,6 +39,7 @@ class Path(BaseObject):
 
     def __str__(self):
         return self.path.__str__()
+
 
 class Monitor(BaseObject):
     action_list = []
@@ -87,8 +92,6 @@ class Monitor(BaseObject):
             print(item)
 
 
-
-
 class Batch(object):
     '''
     This class is designed for implementing batch
@@ -133,6 +136,7 @@ class Batch(object):
     def __len__(self):
         return len(self.__dataset)
 
+
 class Actor(object):
     '''
     Actor base class
@@ -146,6 +150,7 @@ class Actor(object):
         self.out_dim = len_action
         self._gamma = gamma
         self._tau = tau
+
 
 class SampleActor(Actor):
     '''
@@ -209,6 +214,7 @@ class SampleActor(Actor):
 
         self._optimizer.step()
 
+
 class TargetActor(Actor):
     '''
     target actor class
@@ -235,6 +241,7 @@ class TargetActor(Actor):
             target_param.data.copy_(
                 target_param.data * (1.0 - self._tau) + param.data * self._tau
             )
+
 
 class ActorNet(nn.Module):
     '''
@@ -284,6 +291,7 @@ class ActorNet(nn.Module):
         self.layer2.weight.data = fanin_init(self.layer2.weight.data.size())
         self.layer3.weight.data.uniform_(-init_w, init_w)
 
+
 class Critic(object):
     '''
     Critic basic class
@@ -301,6 +309,7 @@ class Critic(object):
         state, action = input_data
         input_data = torch.cat([state, action], 1)
         return self.net(input_data)
+
 
 class SampleCritic(Critic):
     '''
@@ -351,6 +360,7 @@ class SampleCritic(Critic):
         print("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
         self._optimizer.step()
 
+
 class TargetCritic(Critic):
     '''
     Target Critic
@@ -370,6 +380,7 @@ class TargetCritic(Critic):
             target_param.data.copy_(
                 target_param.data * (1.0 - self._tau) + param.data * self._tau
             )
+
 
 class CriticNet(nn.Module):
     '''
@@ -415,6 +426,7 @@ class CriticNet(nn.Module):
         self.layer2.weight.data = fanin_init(self.layer2.weight.data.size())
         self.layer3.weight.data.uniform_(-init_w, init_w)
 
+
 @unique
 class State(Enum):
     expired = 0
@@ -423,10 +435,11 @@ class State(Enum):
     deploying = 3
     future = 4
 
+
 class VNF(BaseObject):
-    '''
+    """
     This class is denoted as a VNF
-    '''
+    """
 
     def __init__(self, latency: float, computing_resource: int):
         '''
@@ -441,10 +454,11 @@ class VNF(BaseObject):
     def __str__(self):
         return "(%f, %d)" % (self.latency, self.computing_resource)
 
+
 class SFC(BaseObject):
-    '''
+    """
     This class is denoted as a SFC
-    '''
+    """
 
     def __init__(self, vnf_list: List[VNF], latency: float, throughput: int, s: int, d: int, time: float, TTL: int):
         '''
@@ -489,27 +503,28 @@ class SFC(BaseObject):
                                                                                                 self.d,
                                                                                                 self.time, self.TTL)
 
+
 class Model(BaseObject):
-    '''
+    """
     This class is denoted as the model, a model contains following:
     1. the topology of the whole network
     2. the ordered SFCs need to be deployed
-    '''
+    """
 
     def __init__(self, topo: nx.Graph, sfc_list: List[SFC]):
-        '''
+        """
         Initialization
         :param topo: network topology
         :param sfc_list: SFCs set
-        '''
+        """
         self.topo = topo
         self.sfc_list = sfc_list
 
     def __str__(self):
-        '''
+        """
         Display in console with specified format.
         :return: display string
-        '''
+        """
         return "TOPO-nodes:\n{}\nTOPO-edges:\n{}\nSFCs:\n{}".format(self.topo.nodes.data(), self.topo.edges.data(),
                                                                     self.sfc_list)
 
@@ -521,22 +536,26 @@ class Model(BaseObject):
         :return: nothing
         '''
         for i in range(len(path.path) - 1):
-            self.topo[path.path[i]][path.path[i+1]]["bandwidth"] -= throughput
-            Monitor.bandwidth_change(path.path[i], path.path[i+1], self.topo[path.path[i]][path.path[i+1]]["bandwidth"] + throughput, self.topo[path.path[i]][path.path[i+1]]["bandwidth"])
+            self.topo[path.path[i]][path.path[i + 1]]["bandwidth"] -= throughput
+            Monitor.bandwidth_change(path.path[i], path.path[i + 1],
+                                     self.topo[path.path[i]][path.path[i + 1]]["bandwidth"] + throughput,
+                                     self.topo[path.path[i]][path.path[i + 1]]["bandwidth"])
 
     def revert_failed(self, failed_sfc_index: int, failed_vnf_index: int):
-        '''
+        """
         deal with deploy failed condition, revert the state of vnf and topo
         :param failed_sfc_index: the index of failed sfc
         :param failed_vnf_index: the index of failed vnf
         :return: nothing
-        '''
+        """
         # computing resource
         for i in range(0, failed_vnf_index):
             before = self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"]
-            self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"] += self.sfc_list[failed_sfc_index].vnf_list[i].computing_resource
+            self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"] += \
+            self.sfc_list[failed_sfc_index].vnf_list[i].computing_resource
             after = self.topo.nodes[self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision]["computing_resource"]
-            Monitor.computing_resource_change(self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision, before, after)
+            Monitor.computing_resource_change(self.sfc_list[failed_sfc_index].vnf_list[i].deploy_decision, before,
+                                              after)
         # bandwidth
         for path in self.sfc_list[failed_sfc_index].paths_occupied:
             for i in range(len(path.path) - 1):
@@ -548,56 +567,58 @@ class Model(BaseObject):
         self.sfc_list[failed_sfc_index].state = State.failed
         Monitor.change_failed(failed_sfc_index)
 
+
 class DecisionMaker(ABC):
-    '''
+    """
     The class used to make deploy decision
-    '''
+    """
+
     def __init__(self):
         super(DecisionMaker, self).__init__()
 
     def is_path_throughtput_available(self, model: Model, path: List, throughput: int):
-        '''
+        """
         Determine if the throughput requirement of the given path is meet
         :param model: given model
         :param path: given path
         :param throughput: given throughput requirement
         :return: true or false
-        '''
+        """
         for i in range(len(path) - 1):
             if model.topo[path[i]][path[i + 1]]["bandwidth"] < throughput:
                 return False
         return True
 
     def path_latency(self, model: Model, path: List):
-        '''
+        """
         Determine if the latency requirement of the given path is meet
         :param model: given model
         :param path: given path
         :return: latency of given path
-        '''
+        """
         path_latency = 0
         for i in range(len(path) - 1):
             path_latency += model.topo[path[i]][path[i + 1]]["latency"]  # calculate latency of path
         return path_latency
 
     def is_throughput_and_latency_available(self, model: Model, server_id: int, cur_sfc_index: int, cur_vnf_index: int):
-        '''
+        """
         Determine if node server_id has enough throughput and latency.
         Requirements:
-            throughput:
-                1. from pre -> cur
-            latency:
-                1. req - ocu - VNFs process latency - cur path latency >= 0
+        throughput:
+        1. from pre -> cur
+        latency:
+        1. req - ocu - VNFs process latency - cur path latency >= 0
         if pre == cur:
-            only need to meet latency1
+        only need to meet latency1
         else:
-            need to meet thoughput1 and latency1
+        need to meet thoughput1 and latency1
         :param model: model
         :param server_id: the server which current vnf will be placed on
         :param cur_sfc_index: the current index of sfc
         :param cur_vnf_index: the current index of vnf
         :return: false(can't be placed) or true
-        '''
+        """
 
         # if deploy first vnf
         pre_server_id = model.sfc_list[cur_sfc_index].s if cur_vnf_index == 0 else model.sfc_list[cur_sfc_index][cur_vnf_index - 1].deploy_decision
@@ -607,22 +628,18 @@ class DecisionMaker(ABC):
         if cur_vnf_index == len(model.sfc_list[cur_sfc_index]) - 1:
             if server_id != model.sfc_list[cur_sfc_index].d:  # the server_id isn't the destination node
                 final_latency = float("inf")
-                for path in nx.all_simple_paths(model.topo, server_id, model.sfc_list[
-                    cur_sfc_index].d):  # the server_id is not the destination node
+                for path in nx.all_simple_paths(model.topo, server_id, model.sfc_list[cur_sfc_index].d):  # the server_id is not the destination node
                     cur_latency = self.path_latency(model, path)
-                    if cur_latency < final_latency and self.is_path_throughtput_available(model, path, model.sfc_list[
-                        cur_sfc_index].throughput):
+                    if cur_latency < final_latency and self.is_path_throughtput_available(model, path, model.sfc_list[cur_sfc_index].throughput):
                         final_latency = cur_latency
 
         # deploy on the same server
         if pre_server_id == server_id:
-            cur_sfc_index
             #  latency1 requirement
             process_latency = 0
             for i in range(cur_vnf_index, len(model.sfc_list[cur_sfc_index])):
                 process_latency += model.sfc_list[cur_sfc_index][i].latency
-            slack_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[
-                cur_sfc_index].latency_occupied - process_latency - final_latency  # calculate residual/slack latency
+            slack_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].latency_occupied - process_latency - final_latency  # calculate residual/slack latency
             return True if slack_latency >= 0 else False
 
         # deploy on the different server
@@ -734,13 +751,13 @@ class DecisionMaker(ABC):
         '''
         final_latency = float("inf")
         final_path = False
-        for path in nx.all_simple_paths(model.topo, start_index, destination_index):  # the server_id is not the destination node
+        for path in nx.all_simple_paths(model.topo, start_index,
+                                        destination_index):  # the server_id is not the destination node
             cur_latency = self.path_latency(model, path)
             if cur_latency < final_latency:
                 final_latency = cur_latency
                 final_path = Path(start_index, destination_index, path, final_latency)
         return final_path
-
 
     @abstractmethod
     def make_decision(self, model: Model, state: State, cur_sfc_index: int, cur_vnf_index: int):
@@ -762,6 +779,7 @@ class DecisionMaker(ABC):
         :return: if success, return the path selected, else return False
         '''
         raise VirtualException()
+
 
 class RandomDecisionMaker(DecisionMaker):
     '''
@@ -800,6 +818,7 @@ def main():
     # nx.draw(topo, with_labels=True)
     # plt.show()
     print(random.sample([1], 1))
+
 
 if __name__ == '__main__':
     main()

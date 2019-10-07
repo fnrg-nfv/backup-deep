@@ -1,0 +1,852 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>vnfbased package &mdash; backup-deep 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> backup-deep
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">vnfbased package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-vnfbased.detecter">vnfbased.detecter module</a></li>
+<li><a class="reference internal" href="#module-vnfbased.generator">vnfbased.generator module</a></li>
+<li><a class="reference internal" href="#module-vnfbased.model">vnfbased.model module</a></li>
+<li><a class="reference internal" href="#module-vnfbased.process">vnfbased.process module</a></li>
+<li><a class="reference internal" href="#module-vnfbased.sampler">vnfbased.sampler module</a></li>
+<li><a class="reference internal" href="#module-vnfbased.solution">vnfbased.solution module</a></li>
+<li><a class="reference internal" href="#module-vnfbased.utils">vnfbased.utils module</a></li>
+<li><a class="reference internal" href="#module-vnfbased">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">backup-deep</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>vnfbased package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/rst/vnfbased.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="vnfbased-package">
+<h1>vnfbased package<a class="headerlink" href="#vnfbased-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-vnfbased.detecter">
+<span id="vnfbased-detecter-module"></span><h2>vnfbased.detecter module<a class="headerlink" href="#module-vnfbased.detecter" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="vnfbased.detecter.detect_cur_state">
+<code class="sig-prename descclassname">vnfbased.detecter.</code><code class="sig-name descname">detect_cur_state</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">cur_sfc_index: int</em>, <em class="sig-param">cur_vnf_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.detecter.detect_cur_state" title="Permalink to this definition">¶</a></dt>
+<dd><p>State vector detector.
+:param model: model
+:param cur_sfc_index: current sfc index
+:param cur_vnf_index: current vnf index
+:return: detected state</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.detecter.main">
+<code class="sig-prename descclassname">vnfbased.detecter.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.detecter.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-vnfbased.generator">
+<span id="vnfbased-generator-module"></span><h2>vnfbased.generator module<a class="headerlink" href="#module-vnfbased.generator" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="vnfbased.generator.generate_model">
+<code class="sig-prename descclassname">vnfbased.generator.</code><code class="sig-name descname">generate_model</code><span class="sig-paren">(</span><em class="sig-param">topo_size: int = 100</em>, <em class="sig-param">sfc_size: int = 100</em>, <em class="sig-param">duration: int = 100</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.generator.generate_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to generate specified number nodes in network topology and SFCs in SFC list
+:param topo_size: nodes number in network topology
+:param sfc_size: SFCs number in SFC list
+:return: Model object</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.generator.generate_sfc_list">
+<code class="sig-prename descclassname">vnfbased.generator.</code><code class="sig-name descname">generate_sfc_list</code><span class="sig-paren">(</span><em class="sig-param">topo: networkx.classes.graph.Graph</em>, <em class="sig-param">size: int = 100</em>, <em class="sig-param">duration: int = 100</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.generator.generate_sfc_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate specified number SFCs
+:param topo: network topology
+:param size: the total number SFCs
+:param duration: arriving SFCs duration
+:return: SFC list</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.generator.generate_topology">
+<code class="sig-prename descclassname">vnfbased.generator.</code><code class="sig-name descname">generate_topology</code><span class="sig-paren">(</span><em class="sig-param">size=100</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.generator.generate_topology" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to generate topology.
+Mainly with three resources: computing resources, bandwidth resources and latency resources.
+:param size: node number
+:return: topology</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-vnfbased.model">
+<span id="vnfbased-model-module"></span><h2>vnfbased.model module<a class="headerlink" href="#module-vnfbased.model" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="vnfbased.model.Actor">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">Actor</code><span class="sig-paren">(</span><em class="sig-param">len_state</em>, <em class="sig-param">len_action</em>, <em class="sig-param">gamma=0.5</em>, <em class="sig-param">tau=0.5</em>, <em class="sig-param">with_BN=False</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Actor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Actor base class</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.ActorNet">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">ActorNet</code><span class="sig-paren">(</span><em class="sig-param">in_dim=5</em>, <em class="sig-param">n_hidden_1=10</em>, <em class="sig-param">n_hidden_2=10</em>, <em class="sig-param">out_dim=5</em>, <em class="sig-param">init_w=0.03</em>, <em class="sig-param">with_BN=False</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.ActorNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Actor neural network structure</p>
+<dl class="method">
+<dt id="vnfbased.model.ActorNet.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.ActorNet.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.ActorNet.init_weights">
+<code class="sig-name descname">init_weights</code><span class="sig-paren">(</span><em class="sig-param">init_w</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.ActorNet.init_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.BaseObject">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">BaseObject</code><a class="headerlink" href="#vnfbased.model.BaseObject" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.Batch">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">Batch</code><span class="sig-paren">(</span><em class="sig-param">dataset=None</em>, <em class="sig-param">capacity=100</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Batch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class is designed for implementing batch</p>
+<dl class="method">
+<dt id="vnfbased.model.Batch.add">
+<code class="sig-name descname">add</code><span class="sig-paren">(</span><em class="sig-param">element</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Batch.add" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Batch.sample">
+<code class="sig-name descname">sample</code><span class="sig-paren">(</span><em class="sig-param">sample_size</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Batch.sample" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.Critic">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">Critic</code><span class="sig-paren">(</span><em class="sig-param">len_state</em>, <em class="sig-param">len_action</em>, <em class="sig-param">gamma</em>, <em class="sig-param">tau</em>, <em class="sig-param">with_BN</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Critic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Critic basic class</p>
+<dl class="method">
+<dt id="vnfbased.model.Critic.getQValue">
+<code class="sig-name descname">getQValue</code><span class="sig-paren">(</span><em class="sig-param">input_data</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Critic.getQValue" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.CriticNet">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">CriticNet</code><span class="sig-paren">(</span><em class="sig-param">in_dim=5</em>, <em class="sig-param">n_hidden_1=10</em>, <em class="sig-param">n_hidden_2=10</em>, <em class="sig-param">out_dim=5</em>, <em class="sig-param">init_w=0.003</em>, <em class="sig-param">with_BN=False</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.CriticNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.module.Module</span></code></p>
+<p>Critic’s neural network structure</p>
+<dl class="method">
+<dt id="vnfbased.model.CriticNet.forward">
+<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param">x</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.CriticNet.forward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines the computation performed at every call.</p>
+<p>Should be overridden by all subclasses.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Although the recipe for forward pass needs to be defined within
+this function, one should call the <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code> instance afterwards
+instead of this since the former takes care of running the
+registered hooks while the latter silently ignores them.</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.CriticNet.init_weights">
+<code class="sig-name descname">init_weights</code><span class="sig-paren">(</span><em class="sig-param">init_w</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.CriticNet.init_weights" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.DecisionMaker">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">DecisionMaker</code><a class="headerlink" href="#vnfbased.model.DecisionMaker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
+<p>The class used to make deploy decision</p>
+<dl class="method">
+<dt id="vnfbased.model.DecisionMaker.available_paths">
+<code class="sig-name descname">available_paths</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">start_server_id: int</em>, <em class="sig-param">destination_server_id: int</em>, <em class="sig-param">cur_sfc_index: int</em>, <em class="sig-param">cur_vnf_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.DecisionMaker.available_paths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all the available paths from one server to another in current vnf
+Note: When call this, remember to make sure the two server is not the same
+:param model: model
+:param start_server_id: start server id
+:param destination_server_id: destination server id
+:param cur_sfc_index: index of current sfc
+:param cur_vnf_index: index of current vnf
+:return: all the available paths</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.DecisionMaker.is_path_throughtput_available">
+<code class="sig-name descname">is_path_throughtput_available</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">path: List</em>, <em class="sig-param">throughput: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.DecisionMaker.is_path_throughtput_available" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if the throughput requirement of the given path is meet
+:param model: given model
+:param path: given path
+:param throughput: given throughput requirement
+:return: true or false</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.DecisionMaker.is_throughput_and_latency_available">
+<code class="sig-name descname">is_throughput_and_latency_available</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">server_id: int</em>, <em class="sig-param">cur_sfc_index: int</em>, <em class="sig-param">cur_vnf_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.DecisionMaker.is_throughput_and_latency_available" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if node server_id has enough throughput and latency.
+Requirements:
+throughput:
+1. from pre -&gt; cur
+latency:
+1. req - ocu - VNFs process latency - cur path latency &gt;= 0
+if pre == cur:
+only need to meet latency1
+else:
+need to meet thoughput1 and latency1
+:param model: model
+:param server_id: the server which current vnf will be placed on
+:param cur_sfc_index: the current index of sfc
+:param cur_vnf_index: the current index of vnf
+:return: false(can’t be placed) or true</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.DecisionMaker.make_decision">
+<em class="property">abstract </em><code class="sig-name descname">make_decision</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">state: vnfbased.model.State</em>, <em class="sig-param">cur_sfc_index: int</em>, <em class="sig-param">cur_vnf_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.DecisionMaker.make_decision" title="Permalink to this definition">¶</a></dt>
+<dd><p>make deploy decisions
+:param model: the model
+:param state: current state
+:param cur_sfc_index: cur index of sfc
+:param cur_vnf_index: cur index of vnf
+:return: if success, return the decision list, else return False</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.DecisionMaker.narrow_node_set">
+<code class="sig-name descname">narrow_node_set</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">cur_sfc_index: int</em>, <em class="sig-param">cur_vnf_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.DecisionMaker.narrow_node_set" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to narrow available node set
+:param model: model
+:param cur_sfc_index: cur processing sfc index
+:param cur_vnf_index: cur processing vnf index
+:return: server sets</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.DecisionMaker.path_latency">
+<code class="sig-name descname">path_latency</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">path: List</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.DecisionMaker.path_latency" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine if the latency requirement of the given path is meet
+:param model: given model
+:param path: given path
+:return: latency of given path</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.DecisionMaker.select_path">
+<em class="property">abstract </em><code class="sig-name descname">select_path</code><span class="sig-paren">(</span><em class="sig-param">paths: List[vnfbased.model.Path]</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.DecisionMaker.select_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>select path from paths
+:param paths: path list
+:return: if success, return the path selected, else return False</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.DecisionMaker.shortest_path">
+<code class="sig-name descname">shortest_path</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">start_index: int</em>, <em class="sig-param">destination_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.DecisionMaker.shortest_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>return the shortest path
+:param model: given model
+:param start_index: index of start server
+:param destination_index: index of destination server
+:return: shortest path or False</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.Model">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">Model</code><span class="sig-paren">(</span><em class="sig-param">topo: networkx.classes.graph.Graph, sfc_list: List[vnfbased.model.SFC]</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.BaseObject" title="vnfbased.model.BaseObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.BaseObject</span></code></a></p>
+<p>This class is denoted as the model, a model contains following:
+1. the topology of the whole network
+2. the ordered SFCs need to be deployed</p>
+<dl class="method">
+<dt id="vnfbased.model.Model.occupy_path">
+<code class="sig-name descname">occupy_path</code><span class="sig-paren">(</span><em class="sig-param">path: vnfbased.model.Path</em>, <em class="sig-param">throughput: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Model.occupy_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>occupy the bandwidth of path
+:param path: given path
+:param throughput: given throughput
+:return: nothing</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Model.revert_failed">
+<code class="sig-name descname">revert_failed</code><span class="sig-paren">(</span><em class="sig-param">failed_sfc_index: int</em>, <em class="sig-param">failed_vnf_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Model.revert_failed" title="Permalink to this definition">¶</a></dt>
+<dd><p>deal with deploy failed condition, revert the state of vnf and topo
+:param failed_sfc_index: the index of failed sfc
+:param failed_vnf_index: the index of failed vnf
+:return: nothing</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.Monitor">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">Monitor</code><a class="headerlink" href="#vnfbased.model.Monitor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.BaseObject" title="vnfbased.model.BaseObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.BaseObject</span></code></a></p>
+<dl class="attribute">
+<dt id="vnfbased.model.Monitor.action_list">
+<code class="sig-name descname">action_list</code><em class="property"> = []</em><a class="headerlink" href="#vnfbased.model.Monitor.action_list" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.bandwidth_change">
+<em class="property">classmethod </em><code class="sig-name descname">bandwidth_change</code><span class="sig-paren">(</span><em class="sig-param">start: int</em>, <em class="sig-param">destination: int</em>, <em class="sig-param">before: int</em>, <em class="sig-param">after: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.bandwidth_change" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.change_deploying">
+<em class="property">classmethod </em><code class="sig-name descname">change_deploying</code><span class="sig-paren">(</span><em class="sig-param">sfc_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.change_deploying" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.change_expired">
+<em class="property">classmethod </em><code class="sig-name descname">change_expired</code><span class="sig-paren">(</span><em class="sig-param">sfc_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.change_expired" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.change_failed">
+<em class="property">classmethod </em><code class="sig-name descname">change_failed</code><span class="sig-paren">(</span><em class="sig-param">sfc_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.change_failed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.change_running">
+<em class="property">classmethod </em><code class="sig-name descname">change_running</code><span class="sig-paren">(</span><em class="sig-param">sfc_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.change_running" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.computing_resource_change">
+<em class="property">classmethod </em><code class="sig-name descname">computing_resource_change</code><span class="sig-paren">(</span><em class="sig-param">server_id: int</em>, <em class="sig-param">before: int</em>, <em class="sig-param">after: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.computing_resource_change" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.deploy_server">
+<em class="property">classmethod </em><code class="sig-name descname">deploy_server</code><span class="sig-paren">(</span><em class="sig-param">sfc_index: int</em>, <em class="sig-param">vnf_index: int</em>, <em class="sig-param">server_id: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.deploy_server" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.latency_occupied_change">
+<em class="property">classmethod </em><code class="sig-name descname">latency_occupied_change</code><span class="sig-paren">(</span><em class="sig-param">sfc_index: int</em>, <em class="sig-param">before: float</em>, <em class="sig-param">after: float</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.latency_occupied_change" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.log">
+<em class="property">classmethod </em><code class="sig-name descname">log</code><span class="sig-paren">(</span><em class="sig-param">content: str</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.log" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.path_occupied">
+<em class="property">classmethod </em><code class="sig-name descname">path_occupied</code><span class="sig-paren">(</span><em class="sig-param">path: vnfbased.model.Path</em>, <em class="sig-param">sfc_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.path_occupied" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.Monitor.print_log">
+<em class="property">classmethod </em><code class="sig-name descname">print_log</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Monitor.print_log" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.Path">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">Path</code><span class="sig-paren">(</span><em class="sig-param">start: int</em>, <em class="sig-param">destination: int</em>, <em class="sig-param">path: List</em>, <em class="sig-param">latency: float</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.Path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.BaseObject" title="vnfbased.model.BaseObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.BaseObject</span></code></a></p>
+<p>This class is denoted as the path from one server to another</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.RandomDecisionMaker">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">RandomDecisionMaker</code><a class="headerlink" href="#vnfbased.model.RandomDecisionMaker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.DecisionMaker" title="vnfbased.model.DecisionMaker"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.DecisionMaker</span></code></a></p>
+<p>The class used to make random decision</p>
+<dl class="method">
+<dt id="vnfbased.model.RandomDecisionMaker.make_decision">
+<code class="sig-name descname">make_decision</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">state: vnfbased.model.State</em>, <em class="sig-param">cur_sfc_index: int</em>, <em class="sig-param">cur_vnf_index: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.RandomDecisionMaker.make_decision" title="Permalink to this definition">¶</a></dt>
+<dd><p>make deploy decisions
+:param model: the model
+:param state: current state
+:param cur_sfc_index: cur index of sfc
+:param cur_vnf_index: cur index of vnf
+:return: if success, return the decision list, else return False</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.RandomDecisionMaker.select_path">
+<code class="sig-name descname">select_path</code><span class="sig-paren">(</span><em class="sig-param">paths: List[vnfbased.model.Path]</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.RandomDecisionMaker.select_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>select path from paths
+:param paths: path list
+:return: path selected or false</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.SFC">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">SFC</code><span class="sig-paren">(</span><em class="sig-param">vnf_list: List[vnfbased.model.VNF], latency: float, throughput: int, s: int, d: int, time: float, TTL: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.SFC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.BaseObject" title="vnfbased.model.BaseObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.BaseObject</span></code></a></p>
+<p>This class is denoted as a SFC</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.SampleActor">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">SampleActor</code><span class="sig-paren">(</span><em class="sig-param">len_state</em>, <em class="sig-param">len_action</em>, <em class="sig-param">scale</em>, <em class="sig-param">gamma=0.5</em>, <em class="sig-param">tau=0.5</em>, <em class="sig-param">lr=0.2</em>, <em class="sig-param">with_BN=False</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.SampleActor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.Actor" title="vnfbased.model.Actor"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.Actor</span></code></a></p>
+<p>Sample actor base class</p>
+<dl class="method">
+<dt id="vnfbased.model.SampleActor.getAction">
+<code class="sig-name descname">getAction</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.SampleActor.getAction" title="Permalink to this definition">¶</a></dt>
+<dd><p>decision maker with specified noise</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.SampleActor.getNet">
+<code class="sig-name descname">getNet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.SampleActor.getNet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.SampleActor.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">prestate_batch</em>, <em class="sig-param">sample_critic</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.SampleActor.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>update parameters once a batch
+:param prestate_batch: the batch of previous states
+:param sample_critic: the sample critic</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.SampleCritic">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">SampleCritic</code><span class="sig-paren">(</span><em class="sig-param">len_state</em>, <em class="sig-param">len_action</em>, <em class="sig-param">gamma=0.5</em>, <em class="sig-param">tau=0.5</em>, <em class="sig-param">lr=0.2</em>, <em class="sig-param">with_BN=False</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.SampleCritic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.Critic" title="vnfbased.model.Critic"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.Critic</span></code></a></p>
+<p>Sample Critic</p>
+<dl class="method">
+<dt id="vnfbased.model.SampleCritic.getNet">
+<code class="sig-name descname">getNet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.SampleCritic.getNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>return net to make sure that TargetCritic can copy</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.SampleCritic.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">prestate_batch</em>, <em class="sig-param">action_batch</em>, <em class="sig-param">reward_batch</em>, <em class="sig-param">state_batch</em>, <em class="sig-param">target_critic</em>, <em class="sig-param">target_actor</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.SampleCritic.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.State">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">State</code><a class="headerlink" href="#vnfbased.model.State" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="attribute">
+<dt id="vnfbased.model.State.deploying">
+<code class="sig-name descname">deploying</code><em class="property"> = 3</em><a class="headerlink" href="#vnfbased.model.State.deploying" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="vnfbased.model.State.expired">
+<code class="sig-name descname">expired</code><em class="property"> = 0</em><a class="headerlink" href="#vnfbased.model.State.expired" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="vnfbased.model.State.failed">
+<code class="sig-name descname">failed</code><em class="property"> = 1</em><a class="headerlink" href="#vnfbased.model.State.failed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="vnfbased.model.State.future">
+<code class="sig-name descname">future</code><em class="property"> = 4</em><a class="headerlink" href="#vnfbased.model.State.future" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="vnfbased.model.State.running">
+<code class="sig-name descname">running</code><em class="property"> = 2</em><a class="headerlink" href="#vnfbased.model.State.running" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.TargetActor">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">TargetActor</code><span class="sig-paren">(</span><em class="sig-param">len_state</em>, <em class="sig-param">len_action</em>, <em class="sig-param">gamma=0.5</em>, <em class="sig-param">tau=0.5</em>, <em class="sig-param">with_BN=False</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.TargetActor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.Actor" title="vnfbased.model.Actor"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.Actor</span></code></a></p>
+<p>target actor class</p>
+<dl class="method">
+<dt id="vnfbased.model.TargetActor.getAction">
+<code class="sig-name descname">getAction</code><span class="sig-paren">(</span><em class="sig-param">state</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.TargetActor.getAction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.TargetActor.getNet">
+<code class="sig-name descname">getNet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.TargetActor.getNet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.TargetActor.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">sample_actor</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.TargetActor.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.TargetCritic">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">TargetCritic</code><span class="sig-paren">(</span><em class="sig-param">len_state</em>, <em class="sig-param">len_action</em>, <em class="sig-param">gamma=0.5</em>, <em class="sig-param">tau=0.5</em>, <em class="sig-param">with_BN=False</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.TargetCritic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.Critic" title="vnfbased.model.Critic"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.Critic</span></code></a></p>
+<p>Target Critic</p>
+<dl class="method">
+<dt id="vnfbased.model.TargetCritic.getNet">
+<code class="sig-name descname">getNet</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.TargetCritic.getNet" title="Permalink to this definition">¶</a></dt>
+<dd><p>return net to make sure that TargetCritic can copy</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="vnfbased.model.TargetCritic.update">
+<code class="sig-name descname">update</code><span class="sig-paren">(</span><em class="sig-param">sample_critic</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.TargetCritic.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.model.VNF">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">VNF</code><span class="sig-paren">(</span><em class="sig-param">latency: float</em>, <em class="sig-param">computing_resource: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.VNF" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#vnfbased.model.BaseObject" title="vnfbased.model.BaseObject"><code class="xref py py-class docutils literal notranslate"><span class="pre">vnfbased.model.BaseObject</span></code></a></p>
+<p>This class is denoted as a VNF</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="vnfbased.model.VirtualException">
+<em class="property">exception </em><code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">VirtualException</code><span class="sig-paren">(</span><em class="sig-param">_type</em>, <em class="sig-param">_func</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.VirtualException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseException</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.model.main">
+<code class="sig-prename descclassname">vnfbased.model.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.model.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-vnfbased.process">
+<span id="vnfbased-process-module"></span><h2>vnfbased.process module<a class="headerlink" href="#module-vnfbased.process" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="vnfbased.process.deploy_sfcs_in_timeslot">
+<code class="sig-prename descclassname">vnfbased.process.</code><code class="sig-name descname">deploy_sfcs_in_timeslot</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">decision_maker: vnfbased.model.DecisionMaker</em>, <em class="sig-param">time: int</em>, <em class="sig-param">step: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.process.deploy_sfcs_in_timeslot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deploy the sfcs located in given timeslot
+:param sfc_list: list of SFCs
+:param time: given time
+:param step: given step</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.process.process_time_slot">
+<code class="sig-prename descclassname">vnfbased.process.</code><code class="sig-name descname">process_time_slot</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">decision_maker: vnfbased.model.DecisionMaker</em>, <em class="sig-param">time: int</em>, <em class="sig-param">time_step: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.process.process_time_slot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function used to simulate within given time slot
+:param model: model environment
+:param decision_maker: decision maker
+:param time: time
+:param time_step: time interval
+:return: nothing</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.process.remove_expired">
+<code class="sig-prename descclassname">vnfbased.process.</code><code class="sig-name descname">remove_expired</code><span class="sig-paren">(</span><em class="sig-param">model: vnfbased.model.Model</em>, <em class="sig-param">time: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.process.remove_expired" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove expired SFCs
+Notice: We do not need to reset the deploy decision of vnf and the links occupied of sfc, because we just need to
+transfer the state from running to expired
+:param model: model object
+:param time: cur time stamp</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-vnfbased.sampler">
+<span id="vnfbased-sampler-module"></span><h2>vnfbased.sampler module<a class="headerlink" href="#module-vnfbased.sampler" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="vnfbased.sampler.main">
+<code class="sig-prename descclassname">vnfbased.sampler.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.sampler.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.sampler.uniform">
+<code class="sig-prename descclassname">vnfbased.sampler.</code><code class="sig-name descname">uniform</code><span class="sig-paren">(</span><em class="sig-param">s: int = 0</em>, <em class="sig-param">d: int = 100</em>, <em class="sig-param">n: int = 100</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.sampler.uniform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Uniform sampler
+:param s: range start
+:param d: range destination
+:param n: number of samples
+:return: list of samples in increasing order</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-vnfbased.solution">
+<span id="vnfbased-solution-module"></span><h2>vnfbased.solution module<a class="headerlink" href="#module-vnfbased.solution" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="vnfbased.solution.Configuration">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.solution.</code><code class="sig-name descname">Configuration</code><span class="sig-paren">(</span><em class="sig-param">sfc: vnfbased.model.SFC, route: List[int], place: List[int], latency: int</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.solution.Configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="vnfbased.solution.Result">
+<em class="property">class </em><code class="sig-prename descclassname">vnfbased.solution.</code><code class="sig-name descname">Result</code><span class="sig-paren">(</span><em class="sig-param">y_r: List[int], x_rs: List[List[int]]</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.solution.Result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.solution.dijkstra">
+<code class="sig-prename descclassname">vnfbased.solution.</code><code class="sig-name descname">dijkstra</code><span class="sig-paren">(</span><em class="sig-param">topo: networkx.classes.graph.Graph</em>, <em class="sig-param">s: int</em><span class="sig-paren">)</span> &#x2192; {}<a class="headerlink" href="#vnfbased.solution.dijkstra" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute single source shortest path with dijkstra algorithm
+:param topo: network topology
+:param s: source node
+:return: shortest path</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.solution.generate_configuration">
+<code class="sig-prename descclassname">vnfbased.solution.</code><code class="sig-name descname">generate_configuration</code><span class="sig-paren">(</span><em class="sig-param">topo: networkx.classes.graph.Graph</em>, <em class="sig-param">sfc: vnfbased.model.SFC</em><span class="sig-paren">)</span> &#x2192; List[vnfbased.solution.Configuration]<a class="headerlink" href="#vnfbased.solution.generate_configuration" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.solution.generate_route_list">
+<code class="sig-prename descclassname">vnfbased.solution.</code><code class="sig-name descname">generate_route_list</code><span class="sig-paren">(</span><em class="sig-param">topo: networkx.classes.graph.Graph</em>, <em class="sig-param">sfc: vnfbased.model.SFC</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.solution.generate_route_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find all paths meet requirement
+:param topo: network topology
+:param sfc: SFC
+:return: route set</p>
+</dd></dl>
+
+</div>
+<div class="section" id="module-vnfbased.utils">
+<span id="vnfbased-utils-module"></span><h2>vnfbased.utils module<a class="headerlink" href="#module-vnfbased.utils" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="vnfbased.utils.fanin_init">
+<code class="sig-prename descclassname">vnfbased.utils.</code><code class="sig-name descname">fanin_init</code><span class="sig-paren">(</span><em class="sig-param">size</em>, <em class="sig-param">fanin=None</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.utils.fanin_init" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.utils.formatnum">
+<code class="sig-prename descclassname">vnfbased.utils.</code><code class="sig-name descname">formatnum</code><span class="sig-paren">(</span><em class="sig-param">x</em>, <em class="sig-param">pos</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.utils.formatnum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.utils.main">
+<code class="sig-prename descclassname">vnfbased.utils.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.utils.main" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.utils.plotActionTrace">
+<code class="sig-prename descclassname">vnfbased.utils.</code><code class="sig-name descname">plotActionTrace</code><span class="sig-paren">(</span><em class="sig-param">action_trace</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.utils.plotActionTrace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.utils.printAction">
+<code class="sig-prename descclassname">vnfbased.utils.</code><code class="sig-name descname">printAction</code><span class="sig-paren">(</span><em class="sig-param">action</em>, <em class="sig-param">window</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.utils.printAction" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.utils.readDataset">
+<code class="sig-prename descclassname">vnfbased.utils.</code><code class="sig-name descname">readDataset</code><span class="sig-paren">(</span><em class="sig-param">path</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.utils.readDataset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.utils.to_numpy">
+<code class="sig-prename descclassname">vnfbased.utils.</code><code class="sig-name descname">to_numpy</code><span class="sig-paren">(</span><em class="sig-param">var</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.utils.to_numpy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="vnfbased.utils.to_tensor">
+<code class="sig-prename descclassname">vnfbased.utils.</code><code class="sig-name descname">to_tensor</code><span class="sig-paren">(</span><em class="sig-param">ndarray</em>, <em class="sig-param">volatile=False</em>, <em class="sig-param">requires_grad=False</em>, <em class="sig-param">dtype=&lt;class 'torch.FloatTensor'&gt;</em><span class="sig-paren">)</span><a class="headerlink" href="#vnfbased.utils.to_tensor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-vnfbased">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-vnfbased" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, fnrg-nfv
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

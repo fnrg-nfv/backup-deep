@@ -1,5 +1,5 @@
-from model import *
-from detecter import *
+from sfcbased.model import *
+from sfcbased.detecter import *
 
 
 def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: int, test_env: TestEnv):

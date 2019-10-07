@@ -4,8 +4,8 @@ import warnings
 import matplotlib.cbook
 import math
 
-from model import *
-import sampler
+from sfcbased.model import *
+import sfcbased.sampler as sampler
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 fig, ax = plt.subplots()
@@ -41,13 +41,13 @@ def generate_topology(size=100):
 
 
 def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
-    '''
+    """
     Generate specified number SFCs
     :param topo: network topology(used to determine the start server and the destination server of specified SFC)
     :param size: the total number SFCs
     :param duration: arriving SFCs duration
     :return: SFC list
-    '''
+    """
     sfc_list = []
     nodes_len = len(topo.nodes)
 

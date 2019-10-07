@@ -1,4 +1,4 @@
-from model import *
+from sfcbased.model import *
 
 def detect_cur_state(model: Model, cur_sfc_index: int, cur_vnf_index: int):
     '''

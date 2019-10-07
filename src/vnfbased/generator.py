@@ -3,8 +3,8 @@ import random
 import warnings
 import matplotlib.cbook
 
-from model import *
-import sampler
+from vnfbased.model import *
+import vnfbased.sampler as sampler
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 fig, ax = plt.subplots()

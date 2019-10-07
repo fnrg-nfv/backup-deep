@@ -1,6 +1,6 @@
 import heapq
 
-from model import *
+from vnfbased.model import *
 
 
 class Result(object):

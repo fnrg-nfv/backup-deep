@@ -5,7 +5,7 @@ import torch.nn as nn
 from abc import ABC, abstractmethod
 import torch.nn.functional as F
 import random
-from utils import *
+from sfcbased.utils import *
 
 
 class VirtualException(BaseException):
@@ -276,11 +276,11 @@ class SFC(BaseObject):
 
 
 class Model(BaseObject):
-    '''
+    """
     This class is denoted as the model, a model contains following:
     1. the topology of the whole network
     2. the ordered SFCs need to be deployed
-    '''
+    """
 
     def __init__(self, topo: nx.Graph, sfc_list: List[SFC]):
         '''
@@ -300,9 +300,9 @@ class Model(BaseObject):
                                                                     self.sfc_list)
 
 class DecisionMaker(BaseObject):
-    '''
+    """
     The class used to make deploy decision
-    '''
+    """
 
     def __init__(self):
         super(DecisionMaker, self).__init__()
@@ -435,12 +435,12 @@ class DecisionMaker(BaseObject):
         return False
 
     def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
-        '''
+        """
         Used to narrow available decision set
         :param model: model
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
-        '''
+        """
         desision_set = set()
         for i in range(len(model.topo.nodes)):
             if not self.verify_active(model, cur_sfc_index, i, test_env):
@@ -454,14 +454,14 @@ class DecisionMaker(BaseObject):
         return desision_set
 
     def make_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
-        '''
+        """
         make deploy decisions
         :param model: the model
         :param state: current state
         :param cur_sfc_index: cur index of sfc
         :param cur_vnf_index: cur index of vnf
         :return: if success, return the decision list, else return False
-        '''
+        """
         decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
         if len(decisions) == 0:
             return False
@@ -484,11 +484,11 @@ class DecisionMaker(BaseObject):
         return decision
 
     def select_path(self, path_set: List, coupled: bool):
-        '''
+        """
         select path from paths
         :param paths: path list
         :return: if success, return the path selected, else return False
-        '''
+        """
         assert len(path_set) is not 0
 
         if not coupled:
@@ -511,7 +511,7 @@ class DecisionMaker(BaseObject):
             return min_path
 
     def select_paths(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
-        '''
+        """
         select paths for determined active instance server index and stand-by instance server index
         :param model: model
         :param sfc_index: sfc index
@@ -519,7 +519,7 @@ class DecisionMaker(BaseObject):
         :param standby_index: stand-by server index
         :param test_env: test environment
         :return: select path
-        '''
+        """
         if test_env == TestEnv.NoBackup:
             active_paths = []
             for active_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
@@ -620,9 +620,9 @@ class RandomDecisionMaker(DecisionMaker):
 
 
 class Batch(object):
-    '''
+    """
     This class is designed for implementing batch
-    '''
+    """
 
     def __init__(self, dataset=None, capacity=100):
         super(Batch, self).__init__()
@@ -665,9 +665,9 @@ class Batch(object):
 
 
 class Actor(object):
-    '''
+    """
     Actor base class
-    '''
+    """
 
     def __init__(self, len_state, len_action, gamma=0.5, tau=0.5, with_BN=False):
         super(Actor, self).__init__()
@@ -680,9 +680,9 @@ class Actor(object):
 
 
 class SampleActor(Actor):
-    '''
+    """
     Sample actor base class
-    '''
+    """
 
     def __init__(self, len_state, len_action, scale, gamma=0.5, tau=0.5, lr=0.2, with_BN=False):
         super(SampleActor, self).__init__(
@@ -698,20 +698,20 @@ class SampleActor(Actor):
         return net
 
     def getAction(self, state):
-        '''
+        """
         decision maker with specified noise
-        '''
+        """
         output = self.net(state)
         rand = torch.rand(self.out_dim)
         output = output + rand
         return output
 
     def update(self, prestate_batch, sample_critic):
-        '''
+        """
         update parameters once a batch
         :param prestate_batch: the batch of previous states
         :param sample_critic: the sample critic
-        '''
+        """
         self._optimizer.zero_grad()
 
         prestate_batch = to_tensor(prestate_batch)
@@ -743,9 +743,9 @@ class SampleActor(Actor):
 
 
 class TargetActor(Actor):
-    '''
+    """
     target actor class
-    '''
+    """
 
     def __init__(self, len_state, len_action, gamma=0.5, tau=0.5, with_BN=False):
         super(TargetActor, self).__init__(
@@ -771,9 +771,9 @@ class TargetActor(Actor):
 
 
 class ActorNet(nn.Module):
-    '''
+    """
     Actor neural network structure
-    '''
+    """
 
     def __init__(self, in_dim=5, n_hidden_1=10, n_hidden_2=10, out_dim=5, init_w=3e-2, with_BN=False):
         super(ActorNet, self).__init__()
@@ -820,9 +820,9 @@ class ActorNet(nn.Module):
 
 
 class Critic(object):
-    '''
+    """
     Critic basic class
-    '''
+    """
 
     def __init__(self, len_state, len_action, gamma, tau, with_BN):
         super(Critic, self).__init__()
@@ -839,9 +839,9 @@ class Critic(object):
 
 
 class SampleCritic(Critic):
-    '''
+    """
     Sample Critic
-    '''
+    """
 
     def __init__(self, len_state, len_action, gamma=0.5, tau=0.5, lr=0.2, with_BN=False):
         super(SampleCritic, self).__init__(
@@ -851,13 +851,11 @@ class SampleCritic(Critic):
         self._optimizer = torch.optim.Adam(self.net.parameters(), lr=self._lr, weight_decay=1e-2)
 
     def getNet(self):
-        ''' return net to make sure that TargetCritic can copy '''
+        """ return net to make sure that TargetCritic can copy """
         net = self.net
         return net
 
     def update(self, prestate_batch, action_batch, reward_batch, state_batch, target_critic, target_actor):
-        '''
-        '''
         next_q_values = target_critic.getQValue([
             to_tensor(state_batch, volatile=True),
             target_actor.getAction(to_tensor(state_batch, volatile=True))
@@ -889,16 +887,16 @@ class SampleCritic(Critic):
 
 
 class TargetCritic(Critic):
-    '''
+    """
     Target Critic
-    '''
+    """
 
     def __init__(self, len_state, len_action, gamma=0.5, tau=0.5, with_BN=False):
         super(TargetCritic, self).__init__(
             len_state, len_action, gamma, tau, with_BN=with_BN)
 
     def getNet(self):
-        ''' return net to make sure that TargetCritic can copy '''
+        """ return net to make sure that TargetCritic can copy """
         net = self.net
         return net
 
@@ -910,9 +908,9 @@ class TargetCritic(Critic):
 
 
 class CriticNet(nn.Module):
-    '''
+    """
     Critic's neural network structure
-    '''
+    """
 
     def __init__(self, in_dim=5, n_hidden_1=10, n_hidden_2=10, out_dim=5, init_w=3e-3, with_BN=False):
         super(CriticNet, self).__init__()

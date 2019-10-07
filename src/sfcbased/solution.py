@@ -1,6 +1,6 @@
 import heapq
 
-from model import *
+from sfcbased.model import *
 
 
 class Result(object):
