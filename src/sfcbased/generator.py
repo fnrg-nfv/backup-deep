@@ -81,10 +81,13 @@ def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 10
     sfc_list = generate_sfc_list(topo=topo, size=sfc_size, duration=duration)
     return Model(topo, sfc_list)
 
-def generate_failed_instances_time_slot(model: Model, error_rate: float):
+def generate_failed_instances_time_slot(model: Model, time: int, error_rate: float):
     """
-    Random generate failed instances
+    Random generate failed instances, for:
+    1. either active or stand-by instance is running
+    2. can't expired in this time slot
     :param model: model
+    :param time: current time
     :param error_rate: error rate
     :return: list of instance
     """
@@ -93,9 +96,10 @@ def generate_failed_instances_time_slot(model: Model, error_rate: float):
     # get all running instances
     all_running_instances = []
     for i in range(len(model.sfc_list)):
-        if model.sfc_list[i].state == State.Normal:
+        cur_sfc = model.sfc_list[i]
+        if cur_sfc.state == State.Normal and cur_sfc.time + cur_sfc.TTL >= time:
             all_running_instances.append(Instance(i, True))
-        if model.sfc_list[i].state == State.Backup:
+        if model.sfc_list[i].state == State.Backup and cur_sfc.time + cur_sfc.TTL >= time:
             all_running_instances.append(Instance(i, False))
 
     # random select

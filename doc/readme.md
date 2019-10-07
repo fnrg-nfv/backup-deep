@@ -58,6 +58,11 @@ The state transition graph as following:
 | MaxReservation   | consider current remaining and max reserved, will failed for **stand-by→active**. |
 | FullyReservation | will not failed.                                             |
 
+## Monitor
+
+- Monitor the state change of each sfc;
+- Monitor the resources change of each node and edge; 
+
 ## State
 
 ## Action

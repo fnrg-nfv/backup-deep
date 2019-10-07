@@ -181,6 +181,7 @@ class ACSFC(BaseObject):
 
     def __init__(self):
         self.server = VariableState.Uninitialized
+        self.starttime = VariableState.Uninitialized
         self.downtime = VariableState.Uninitialized
         self.path_s2c = VariableState.Uninitialized
         self.path_c2d = VariableState.Uninitialized
@@ -254,8 +255,35 @@ class SFC(BaseObject):
         :param new_state: new state
         :return: nothing
         """
+
+        # Monitor the state transition
         Monitor.state_transition(time, sfc_index, self.state, new_state, reason)
+
+        # set the start time and down time of each sfc instance
+        if self.state == State.Undeployed:
+            if new_state == State.Failed:
+                self.active_sfc.starttime = -1
+                self.active_sfc.downtime = -1
+                self.standby_sfc.starttime = -1
+                self.standby_sfc.downtime = -1
+            if new_state == State.Normal:
+                self.active_sfc.starttime = self.time
+        if self.state == State.Normal:
+            self.active_sfc.downtime = time
+            if new_state == State.Backup:
+                self.standby_sfc.starttime = time
+            if new_state == State.Broken:
+                self.standby_sfc.starttime = -1
+                self.standby_sfc.downtime = -1
+        if self.state == State.Backup:
+            if new_state == State.Broken:
+                if reason == BrokenReason.TimeExpired:
+                    self.standby_sfc.downtime = self.time + self.TTL
+                else:
+                    self.standby_sfc.downtime = time
+
         self.state = new_state
+
 
 
 class Model(BaseObject):
@@ -281,6 +309,33 @@ class Model(BaseObject):
         """
         return "TOPO-nodes:\n{}\nTOPO-edges:\n{}\nSFCs:\n{}".format(self.topo.nodes.data(), self.topo.edges.data(),
                                                                     self.sfc_list)
+
+    def print_start_and_down(self):
+        """
+        Print out the start time and down time of each instance of each sfc
+        :return: nothing
+        """
+        for i in range(len(self.sfc_list)):
+            print("SFC {}:\n   active started at time {} downed at time {}\n   stand-by started at time {} downed at time {}\n".format(i,
+                                                                                                                                        self.sfc_list[i].active_sfc.starttime,
+                                                                                                                                        self.sfc_list[i].active_sfc.downtime,
+                                                                                                                                        self.sfc_list[i].standby_sfc.starttime,
+                                                                                                                                        self.sfc_list[i].standby_sfc.downtime))
+
+    def calculate_fail_rate(self):
+        """
+        Calculate fail rate
+        :return: fail rate
+        """
+
+        real_not_service = 0
+        should_not_service = 0
+        for i in range(len(self.sfc_list)):
+            cur_sfc = self.sfc_list[i]
+            if cur_sfc.state == State.Broken:
+                should_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime
+                real_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime - (cur_sfc.standby_sfc.downtime - cur_sfc.standby_sfc.starttime)
+        return real_not_service / should_not_service
 
 
 
