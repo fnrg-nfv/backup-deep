@@ -13,17 +13,24 @@ fig.set_tight_layout(False)
 
 
 def generate_topology(size=100):
-    '''
+    """
     Function used to generate topology.
     Mainly with three resources: computing resources, bandwidth resources and latency resources.
+    Notices:
+    1. active: the resources occupied by active instance
+    2. reserved: the resources reserved by stand-by instance
+    3. max_sbsfc_index: the index of stand-by sfc which has largest reservation, only for MaxReservation
+    4. sbsfcs: the stand=by sfc deployed on this server(not started)
     :param size: node number
     :return: topology
-    '''
+    """
     topo = nx.Graph()
+
     # generate V
     for i in range(size):
         computing_resource = random.randint(40000, 80000)
         topo.add_node(i, computing_resource=computing_resource, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
+
     # generate E
     for i in range(size):
         for j in range(i + 1, size):
@@ -63,12 +70,13 @@ def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
 
 
 def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 100):
-    '''
+    """
     Function used to generate specified number nodes in network topology and SFCs in SFC list
     :param topo_size: nodes number in network topology
     :param sfc_size: SFCs number in SFC list
+    :param duration: Duration of model
     :return: Model object
-    '''
+    """
     topo = generate_topology(size=topo_size)
     sfc_list = generate_sfc_list(topo=topo, size=sfc_size, duration=duration)
     return Model(topo, sfc_list)
