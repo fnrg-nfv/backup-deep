@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 # meta-parameters
 topo_size = 10 # topology size
-sfc_size = 100 # number of SFCs
+sfc_size = 200 # number of SFCs
 duration = 100 # simulation time
 error_rate = 0.1
 test_env = TestEnv.FullyReservation

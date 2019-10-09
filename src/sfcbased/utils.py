@@ -10,18 +10,6 @@ __author__ = "tristone"
 __copyright__ = "Copyright (c) 2019"
 __email__ = "tristone13th@outlook.com"
 
-USE_CUDA = False
-FLOAT = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
-
-
-def to_tensor(ndarray, volatile=False, requires_grad=False, dtype=FLOAT):
-    return Variable(
-        torch.from_numpy(ndarray), volatile=volatile, requires_grad=requires_grad
-    ).type(dtype)
-
-
-def to_numpy(var):
-    return var.cpu().data.numpy() if USE_CUDA else var.data.numpy()
 
 
 def printAction(action, window):
@@ -32,12 +20,6 @@ def printAction(action, window):
         i = i + window
     plt.plot(sum_list)
     plt.show()
-
-
-def fanin_init(size, fanin=None):
-    fanin = fanin or size[0]
-    v = 1. / np.sqrt(fanin)
-    return torch.Tensor(size).uniform_(-v, v)
 
 
 def readDataset(path):
