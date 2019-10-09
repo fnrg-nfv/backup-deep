@@ -30,7 +30,7 @@
 |   Failed   | Deploy failed.                                               |
 |   Normal   | The deployment is successful and the active instance is running. |
 |   Backup   | The deployment is successful, the active instance is damaged, and the stand-by instance is running. |
-|   Broken   | The deployment is successful, the active instance is not running, and the stand-by instance is not running too. |
+|   Broken   | The deployment is successful, the active instance is not running, and the stand-by instance is not running too(if with backup). |
 
 The state transition graph as following:
 
@@ -46,7 +46,8 @@ The state transition graph as following:
 
 - **Time expired**: if a stand-by instance not start;
 - Sudden damage of the stand-by instance;
-- The stand-by instance did not start successfully when the active instance is damaged(because resource requirements are not met).
+- The stand-by instance did not start successfully when the active instance is damaged(because resource requirements are not met);
+- No backup condition when the active instance is damaged;
 
 ## Test environment
 
@@ -62,6 +63,11 @@ The state transition graph as following:
 
 - Monitor the state change of each sfc;
 - Monitor the resources change of each node and edge; 
+
+## Reinforcement Learning method
+
+- On-policy(online);
+- Discrete action space; 
 
 ## State
 

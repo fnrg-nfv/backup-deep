@@ -12,7 +12,7 @@ fig, ax = plt.subplots()
 fig.set_tight_layout(False)
 
 
-def generate_topology(size=100):
+def generate_topology(size: int = 100):
     """
     Function used to generate topology.
     Mainly with three resources: computing resources, bandwidth resources and latency resources.
@@ -28,15 +28,15 @@ def generate_topology(size=100):
 
     # generate V
     for i in range(size):
-        computing_resource = random.randint(40000, 80000)
+        computing_resource = random.randint(10000, 20000)
         topo.add_node(i, computing_resource=computing_resource, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
 
     # generate E
     for i in range(size):
         for j in range(i + 1, size):
-            if random.randint(1, 5) == 1:
+            if random.randint(1, 3) == 1:
                 bandwidth = random.randint(1000, 10000)
-                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs=set())
+                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
     return topo
 
 
@@ -86,6 +86,10 @@ def generate_failed_instances_time_slot(model: Model, time: int, error_rate: flo
     Random generate failed instances, for:
     1. either active or stand-by instance is running
     2. can't expired in this time slot
+    Consider two ways for generating failed instances:
+    [×] 1. if the failed instances are decided by server, the instances running on this server will all failed and we can't decide whether our placement is good or not
+    [√] 2. if the failed instances are dicided by themselves, then one running active instance failed will make its stand-by instance started, this will occupy the resources
+    on the server which this stand-by instance is placed, and influence other stand-by instances, so we use this.
     :param model: model
     :param time: current time
     :param error_rate: error rate

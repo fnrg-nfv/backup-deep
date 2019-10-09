@@ -28,6 +28,7 @@ class BrokenReason(Enum):
     TimeExpired = 1
     StandbyDamage = 2
     StandbyStartFailed = 3
+    ActiveDamage = 4 # for NoBackup condition
 
 
 @unique
