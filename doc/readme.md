@@ -17,6 +17,11 @@
 - Establish a time-series model that makes decisions based on the arrival time of the SFC；
 - Use the reinforcement learning algorithm to determine the location of the node to be placed, and use the greedy algorithm to determine the link occupied;
 
+## Terms
+
+- Episode: In the context of reinforcement learning algorithms, it represents a simulation;
+- Step: Each SFC's deployment.
+
 ## Routing algorithm
 
 - Find all paths that meet throughput and latency requirements；

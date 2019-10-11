@@ -1,11 +1,8 @@
 from typing import List
 import networkx as nx
 from enum import Enum, unique
-
-from abc import ABC, abstractmethod
-
 import random
-from sfcbased.utils import *
+from abc import ABCMeta, abstractmethod
 
 
 class VirtualException(BaseException):
@@ -28,7 +25,7 @@ class BrokenReason(Enum):
     TimeExpired = 1
     StandbyDamage = 2
     StandbyStartFailed = 3
-    ActiveDamage = 4 # for NoBackup condition
+    ActiveDamage = 4  # for NoBackup condition
 
 
 @unique
@@ -65,7 +62,8 @@ class Decision(BaseObject):
     This class is denoted as a decision
     """
 
-    def __init__(self, active_server: int, standby_server: int):
+    def __init__(self, active_server: int = VariableState.Uninitialized,
+                 standby_server: int = VariableState.Uninitialized):
         """
         Initialization
         :param active_server: server index of active instance
@@ -286,7 +284,6 @@ class SFC(BaseObject):
         self.state = new_state
 
 
-
 class Model(BaseObject):
     """
     This class is denoted as the model, a model contains following:
@@ -317,11 +314,13 @@ class Model(BaseObject):
         :return: nothing
         """
         for i in range(len(self.sfc_list)):
-            print("SFC {}:\n   active started at time {} downed at time {}\n   stand-by started at time {} downed at time {}\n".format(i,
-                                                                                                                                        self.sfc_list[i].active_sfc.starttime,
-                                                                                                                                        self.sfc_list[i].active_sfc.downtime,
-                                                                                                                                        self.sfc_list[i].standby_sfc.starttime,
-                                                                                                                                        self.sfc_list[i].standby_sfc.downtime))
+            print(
+                "SFC {}:\n   active started at time {} downed at time {}\n   stand-by started at time {} downed at time {}\n".format(
+                    i,
+                    self.sfc_list[i].active_sfc.starttime,
+                    self.sfc_list[i].active_sfc.downtime,
+                    self.sfc_list[i].standby_sfc.starttime,
+                    self.sfc_list[i].standby_sfc.downtime))
 
     def calculate_fail_rate(self):
         """
@@ -335,9 +334,9 @@ class Model(BaseObject):
             cur_sfc = self.sfc_list[i]
             if cur_sfc.state == State.Broken:
                 should_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime
-                real_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime - (cur_sfc.standby_sfc.downtime - cur_sfc.standby_sfc.starttime)
+                real_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime - (
+                            cur_sfc.standby_sfc.downtime - cur_sfc.standby_sfc.starttime)
         return real_not_service / should_not_service
-
 
 
 class DecisionMaker(BaseObject):
@@ -348,8 +347,7 @@ class DecisionMaker(BaseObject):
     def __init__(self):
         super(DecisionMaker, self).__init__()
 
-    @staticmethod
-    def is_path_throughput_met(model: Model, path: List, throughput: int, cur_sfc_type: SFCType, test_env: TestEnv):
+    def is_path_throughput_met(self, model: Model, path: List, throughput: int, cur_sfc_type: SFCType, test_env: TestEnv):
         """
         Determine if the throughput requirement of the given path is meet based on current sfc type
         :param model: given model
@@ -380,8 +378,7 @@ class DecisionMaker(BaseObject):
                         return False
             return True
 
-    @staticmethod
-    def is_path_latency_met(model: Model, path_s2c: List, path_c2d: List, latency: float):
+    def is_path_latency_met(self, model: Model, path_s2c: List, path_c2d: List, latency: float):
         """
         Determine if the latency requirement of the given path is meet
         :param model: given model
@@ -421,13 +418,14 @@ class DecisionMaker(BaseObject):
         for path_s2c in nx.all_simple_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
             for path_c2d in nx.all_simple_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
                 remain_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].process_latency
-                if self.is_path_latency_met(model, path_s2c, path_c2d, remain_latency) and self.is_path_throughput_met(model,
-                                                                                                                       path_s2c,
-                                                                                                                       model.sfc_list[
-                                                                                                                      cur_sfc_index].tp,
-                                                                                                                       SFCType.Active,
-                                                                                                                       test_env) and self.is_path_throughput_met(
-                        model, path_c2d, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
+                if self.is_path_latency_met(model, path_s2c, path_c2d, remain_latency) and self.is_path_throughput_met(
+                        model,
+                        path_s2c,
+                        model.sfc_list[
+                            cur_sfc_index].tp,
+                        SFCType.Active,
+                        test_env) and self.is_path_throughput_met(
+                    model, path_c2d, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
                     return True
 
     def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int,
@@ -465,7 +463,8 @@ class DecisionMaker(BaseObject):
         # principle 2
         principle2 = False
         for path in nx.all_simple_paths(model.topo, active_server_index, cur_server_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active, test_env):
+            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
+                                           test_env):
                 principle2 = True
                 break
         if not principle2:
@@ -479,7 +478,7 @@ class DecisionMaker(BaseObject):
                                                 cur_sfc_index].process_latency) and self.is_path_throughput_met(model,
                                                                                                                 path_s2c,
                                                                                                                 model.sfc_list[
-                                                                                                               cur_sfc_index].tp,
+                                                                                                                    cur_sfc_index].tp,
                                                                                                                 SFCType.Standby,
                                                                                                                 test_env) and self.is_path_throughput_met(
                     model,
@@ -491,57 +490,41 @@ class DecisionMaker(BaseObject):
 
         return False
 
-    def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+    @abstractmethod
+    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
         """
-        Used to narrow available decision set
-        :param test_env:
+        generate new decision, don't check if it can be deployed
         :param model: model
-        :param cur_sfc_index: cur processing sfc index
-        :return: decision sets
+        :param cur_sfc_index: current sfc index
+        :param test_env: test environment
+        :return: decision
         """
-        desision_set = []
-        for i in range(len(model.topo.nodes)):
-            if not self.verify_active(model, cur_sfc_index, i, test_env):
-                continue
-            if test_env == TestEnv.NoBackup:
-                desision_set.append(Decision(i, -1))
-                continue
-            for j in range(len(model.topo.nodes)):
-                if self.verify_standby(model, cur_sfc_index, i, j, test_env):
-                    desision_set.append(Decision(i, j))
-        return desision_set
+        return Decision()
 
     def make_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
         """
         make deploy decisions, and check up if this decision can be placed, consider no backup and with backup
-        :param test_env:
         :param model: the model
         :param cur_sfc_index: cur index of sfc
+        :param test_env: test environment
         :return: if success, return the decision list, else return False
         """
-        decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
-        if len(decisions) == 0:
+        decision = self.generate_decision(model, cur_sfc_index, test_env)
+        if decision.active_server == VariableState.Uninitialized:
             return False
+        paths = self.select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
+        if test_env != TestEnv.NoBackup:
+            decision.set_active_path_s2c(paths[0][0])
+            decision.set_active_path_c2d(paths[0][1])
+            decision.set_standby_path_s2c(paths[1][0])
+            decision.set_standby_path_c2d(paths[1][1])
+            decision.set_update_path(paths[2])
         else:
-            decision = self.select_decision_from_decisions(decisions)
-            paths = self.select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
-            if test_env != TestEnv.NoBackup:
-                decision.set_active_path_s2c(paths[0][0])
-                decision.set_active_path_c2d(paths[0][1])
-                decision.set_standby_path_s2c(paths[1][0])
-                decision.set_standby_path_c2d(paths[1][1])
-                decision.set_update_path(paths[2])
-            else:
-                decision.set_active_path_s2c(paths[0])
-                decision.set_active_path_c2d(paths[1])
-            return decision
-
-    def select_decision_from_decisions(self, decisions: List):
-        decision = random.sample(decisions, 1)[0]
+            decision.set_active_path_s2c(paths[0])
+            decision.set_active_path_c2d(paths[1])
         return decision
 
-    @staticmethod
-    def select_path(path_set: List, coupled: bool):
+    def select_path(self, path_set: List, coupled: bool):
         """
         select path from paths
         :param path_set:
@@ -590,7 +573,7 @@ class DecisionMaker(BaseObject):
                                                     sfc_index].process_latency) and self.is_path_throughput_met(model,
                                                                                                                 active_s2c,
                                                                                                                 model.sfc_list[
-                                                                                                               sfc_index].tp,
+                                                                                                                    sfc_index].tp,
                                                                                                                 SFCType.Active,
                                                                                                                 test_env) and self.is_path_throughput_met(
                         model,
@@ -612,7 +595,7 @@ class DecisionMaker(BaseObject):
                                                 sfc_index].process_latency) and self.is_path_throughput_met(model,
                                                                                                             active_s2c,
                                                                                                             model.sfc_list[
-                                                                                                           sfc_index].tp,
+                                                                                                                sfc_index].tp,
                                                                                                             SFCType.Active,
                                                                                                             test_env) and self.is_path_throughput_met(
                     model,
@@ -632,7 +615,7 @@ class DecisionMaker(BaseObject):
                                                 sfc_index].process_latency) and self.is_path_throughput_met(model,
                                                                                                             standby_s2c,
                                                                                                             model.sfc_list[
-                                                                                                           sfc_index].tp,
+                                                                                                                sfc_index].tp,
                                                                                                             SFCType.Standby,
                                                                                                             test_env) and self.is_path_throughput_met(
                     model,
@@ -666,9 +649,44 @@ class RandomDecisionMaker(DecisionMaker):
     def __init__(self):
         super(RandomDecisionMaker, self).__init__()
 
-    def select_decision_from_decisions(self, decisions: set):
+    def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+        """
+        Used to narrow available decision set
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: cur processing sfc index
+        :return: decision sets
+        """
+        desision_set = []
+        for i in range(len(model.topo.nodes)):
+            if not self.verify_active(model, cur_sfc_index, i, test_env):
+                continue
+            if test_env == TestEnv.NoBackup:
+                desision_set.append(Decision(i, -1))
+                continue
+            for j in range(len(model.topo.nodes)):
+                if self.verify_standby(model, cur_sfc_index, i, j, test_env):
+                    desision_set.append(Decision(i, j))
+        return desision_set
+
+    def select_decision_from_decisions(self, decisions: List):
         decision = random.sample(decisions, 1)[0]
         return decision
+
+    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+        """
+        generate new decision, don't check if it can be deployed
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param test_env: test environment
+        :return: decision
+        """
+        decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
+        if len(decisions) == 0:
+            return Decision()
+        decision = self.select_decision_from_decisions(decisions)
+        return decision
+
 
 class RLDecisionMaker(DecisionMaker):
     """
@@ -677,8 +695,6 @@ class RLDecisionMaker(DecisionMaker):
 
     def __int__(self):
         super(RLDecisionMaker, self).__init__()
-
-
 
 
 # test
