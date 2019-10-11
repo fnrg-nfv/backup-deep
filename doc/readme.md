@@ -39,7 +39,7 @@ The state transition graph as following:
 | Undeployed→Failed | present        | When a sfc need to be deployed, and can't be deployed.       |
 | Undeployed→Normal | present        | When a sfc need to be deployed, and deployed.                |
 |   Normal→Backup   | each time slot | When an active instance failed, the stand-by instance started. |
-|   Normal→Broken   | each time slot | When an active instance failed, the stand-by instance can't be started, **or time expired**. |
+|   Normal→Broken   | each time slot | When an active instance failed, the stand-by instance can't be started, or without backup, **or time expired**. |
 |   Backup→Broken   | each time slot | When a stand-by instance failed, **or time expired**.        |
 
 ## `Broken` reasons
@@ -54,10 +54,10 @@ The state transition graph as following:
 | Name             | Description                                                  |
 | ---------------- | ------------------------------------------------------------ |
 | NoBackup         | No backup.                                                   |
-| Aggressive       | aggressive method, don't consider current remaining resources. |
-| Normal           | consider current remaining resources, will failed for **new active** or **stand-by→active**. |
-| MaxReservation   | consider current remaining and max reserved, will failed for **stand-by→active**. |
-| FullyReservation | will not failed.                                             |
+| Aggressive       | Aggressive method, don't consider current remaining resources. |
+| Normal           | Consider current remaining resources, will failed for **new active** or **stand-by→active**. |
+| MaxReservation   | Consider current remaining and max reserved, will failed for **stand-by→active**. |
+| FullyReservation | Will not failed.                                             |
 
 ## Monitor
 
@@ -75,16 +75,26 @@ The state transition graph as following:
 
 - Location of active instance;
 - Location of stand-by instance;
-
 - ~~The link from start server to active instance;~~
-
 - ~~The link from active instance to end server;~~
-
 - ~~The link from start server to stand-by instance;~~
-
 - ~~The link from stand-by instance to end server;~~
-
 - ~~The link from active instance to stand-by instance.~~
+
+## Reward
+
+Mainly three components:
+
+- If this SFC is **accepted**;
+- If this SFC's active instance placed good or not;
+- If this SFC's stand-by instance placed good or not.
+
+So how to determine an instance is placed good or not? We should consider a function which can compute this, this function has four main parameters:
+
+- The placed server's **computing resource**;
+- The **active** area;
+- The **max** computing resource of all stand-by instances;
+- The number of stand-by instances placed on this server.
 
 # Others
 
