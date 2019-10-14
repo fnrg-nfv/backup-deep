@@ -335,7 +335,7 @@ class Model(BaseObject):
             if cur_sfc.state == State.Broken:
                 should_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime
                 real_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime - (
-                            cur_sfc.standby_sfc.downtime - cur_sfc.standby_sfc.starttime)
+                        cur_sfc.standby_sfc.downtime - cur_sfc.standby_sfc.starttime)
         return real_not_service / should_not_service
 
 
@@ -347,7 +347,8 @@ class DecisionMaker(BaseObject):
     def __init__(self):
         super(DecisionMaker, self).__init__()
 
-    def is_path_throughput_met(self, model: Model, path: List, throughput: int, cur_sfc_type: SFCType, test_env: TestEnv):
+    def is_path_throughput_met(self, model: Model, path: List, throughput: int, cur_sfc_type: SFCType,
+                               test_env: TestEnv):
         """
         Determine if the throughput requirement of the given path is meet based on current sfc type
         :param model: given model
@@ -415,18 +416,15 @@ class DecisionMaker(BaseObject):
             return False
 
         # principle 2
-        for path_s2c in nx.all_simple_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
-            for path_c2d in nx.all_simple_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
-                remain_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].process_latency
-                if self.is_path_latency_met(model, path_s2c, path_c2d, remain_latency) and self.is_path_throughput_met(
-                        model,
-                        path_s2c,
-                        model.sfc_list[
-                            cur_sfc_index].tp,
-                        SFCType.Active,
-                        test_env) and self.is_path_throughput_met(
-                    model, path_c2d, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
-                    return True
+        remain_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].process_latency
+        for path_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
+            if self.is_path_throughput_met(model, path_s2c, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
+                for path_c2d in nx.all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
+                    if self.is_path_latency_met(model, path_s2c, path_c2d,
+                                                remain_latency) and self.is_path_throughput_met(
+                        model, path_c2d, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
+                        return True
+        return False
 
     def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int,
                        test_env: TestEnv):
@@ -462,7 +460,7 @@ class DecisionMaker(BaseObject):
 
         # principle 2
         principle2 = False
-        for path in nx.all_simple_paths(model.topo, active_server_index, cur_server_index):
+        for path in nx.all_shortest_paths(model.topo, active_server_index, cur_server_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
                                            test_env):
                 principle2 = True
@@ -471,22 +469,19 @@ class DecisionMaker(BaseObject):
             return False
 
         # principle 3
-        for path_s2c in nx.all_simple_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
-            for path_c2d in nx.all_simple_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
-                if self.is_path_latency_met(model, path_s2c, path_c2d,
-                                            model.sfc_list[cur_sfc_index].latency - model.sfc_list[
-                                                cur_sfc_index].process_latency) and self.is_path_throughput_met(model,
-                                                                                                                path_s2c,
-                                                                                                                model.sfc_list[
-                                                                                                                    cur_sfc_index].tp,
-                                                                                                                SFCType.Standby,
-                                                                                                                test_env) and self.is_path_throughput_met(
-                    model,
-                    path_c2d,
-                    model.sfc_list[
-                        cur_sfc_index].tp,
-                    SFCType.Standby, test_env):
-                    return True
+        for path_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
+            if self.is_path_throughput_met(model, path_s2c, model.sfc_list[cur_sfc_index].tp, SFCType.Standby,
+                                           test_env):
+                for path_c2d in nx.all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
+                    if self.is_path_latency_met(model, path_s2c, path_c2d,
+                                                model.sfc_list[cur_sfc_index].latency - model.sfc_list[
+                                                    cur_sfc_index].process_latency) and self.is_path_throughput_met(
+                        model,
+                        path_c2d,
+                        model.sfc_list[
+                            cur_sfc_index].tp,
+                        SFCType.Standby, test_env):
+                        return True
 
         return False
 
@@ -512,7 +507,36 @@ class DecisionMaker(BaseObject):
         decision = self.generate_decision(model, cur_sfc_index, test_env)
         if decision.active_server == VariableState.Uninitialized:
             return False
+
+        # servers met or not
+        if model.topo.nodes[decision.active_server]["computing_resource"] - model.topo.nodes[decision.active_server][
+            "active"] - \
+                model.topo.nodes[decision.active_server]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
+            return False
+        if test_env == TestEnv.Aggressive:
+            if model.topo.nodes[decision.standby_server]["computing_resource"] < model.sfc_list[
+                cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
+            if model.topo.nodes[decision.standby_server]["computing_resource"] - \
+                    model.topo.nodes[decision.standby_server][
+                        "active"] < \
+                    model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.FullyReservation:
+            if model.topo.nodes[decision.standby_server]["computing_resource"] - \
+                    model.topo.nodes[decision.standby_server][
+                        "active"] - \
+                    model.topo.nodes[decision.standby_server]["reserved"] < model.sfc_list[
+                cur_sfc_index].computing_resource:
+                return False
+
+        # paths met or not
+
         paths = self.select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
+        if not paths:
+            return False
+
         if test_env != TestEnv.NoBackup:
             decision.set_active_path_s2c(paths[0][0])
             decision.set_active_path_c2d(paths[0][1])
@@ -531,7 +555,8 @@ class DecisionMaker(BaseObject):
         :param coupled:
         :return: if success, return the path selected, else return False
         """
-        assert len(path_set) is not 0
+        if len(path_set) == 0:
+            return False
 
         if not coupled:
             min_value = float("inf")
@@ -560,78 +585,70 @@ class DecisionMaker(BaseObject):
         :param active_index: active server index
         :param standby_index: stand-by server index
         :param test_env: test environment
-        :return: select path
+        :return: select path, else return false
         """
 
         # No backup condition
         if test_env == TestEnv.NoBackup:
             active_paths = []
-            for active_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
-                for active_c2d in nx.all_simple_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
-                    if self.is_path_latency_met(model, active_s2c, active_c2d,
-                                                model.sfc_list[sfc_index].latency - model.sfc_list[
-                                                    sfc_index].process_latency) and self.is_path_throughput_met(model,
-                                                                                                                active_s2c,
-                                                                                                                model.sfc_list[
-                                                                                                                    sfc_index].tp,
-                                                                                                                SFCType.Active,
-                                                                                                                test_env) and self.is_path_throughput_met(
-                        model,
-                        active_c2d,
-                        model.sfc_list[
-                            sfc_index].tp,
-                        SFCType.Active, test_env):
-                        active_paths.append([active_s2c, active_c2d])
-            assert len(active_paths) is not 0
+            for active_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
+                if self.is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active,
+                                               test_env):
+                    for active_c2d in nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
+                        if self.is_path_latency_met(model, active_s2c, active_c2d,
+                                                    model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                        sfc_index].process_latency) and self.is_path_throughput_met(
+                            model,
+                            active_c2d,
+                            model.sfc_list[
+                                sfc_index].tp,
+                            SFCType.Active, test_env):
+                            active_paths.append([active_s2c, active_c2d])
+
+            if len(active_paths) == 0:
+                return False
             active_path = self.select_path(active_paths, True)
             return active_path
 
         # calculate paths for active instance
         active_paths = []
-        for active_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
-            for active_c2d in nx.all_simple_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
-                if self.is_path_latency_met(model, active_s2c, active_c2d,
-                                            model.sfc_list[sfc_index].latency - model.sfc_list[
-                                                sfc_index].process_latency) and self.is_path_throughput_met(model,
-                                                                                                            active_s2c,
-                                                                                                            model.sfc_list[
-                                                                                                                sfc_index].tp,
-                                                                                                            SFCType.Active,
-                                                                                                            test_env) and self.is_path_throughput_met(
-                    model,
-                    active_c2d,
-                    model.sfc_list[
-                        sfc_index].tp,
-                    SFCType.Active, test_env):
-                    active_paths.append([active_s2c, active_c2d])
-        assert len(active_paths) is not 0
+        for active_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
+            if self.is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
+                for active_c2d in nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
+                    if self.is_path_latency_met(model, active_s2c, active_c2d,
+                                                model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                    sfc_index].process_latency) and self.is_path_throughput_met(
+                        model,
+                        active_c2d,
+                        model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
+                        active_paths.append([active_s2c, active_c2d])
+        if len(active_paths) == 0:
+            return False
 
         # calculate paths for stand-by instance
         standby_paths = []
-        for standby_s2c in nx.all_simple_paths(model.topo, model.sfc_list[sfc_index].s, standby_index):
-            for standby_c2d in nx.all_simple_paths(model.topo, standby_index, model.sfc_list[sfc_index].d):
-                if self.is_path_latency_met(model, standby_s2c, standby_c2d,
-                                            model.sfc_list[sfc_index].latency - model.sfc_list[
-                                                sfc_index].process_latency) and self.is_path_throughput_met(model,
-                                                                                                            standby_s2c,
-                                                                                                            model.sfc_list[
-                                                                                                                sfc_index].tp,
-                                                                                                            SFCType.Standby,
-                                                                                                            test_env) and self.is_path_throughput_met(
-                    model,
-                    standby_c2d,
-                    model.sfc_list[
-                        sfc_index].tp,
-                    SFCType.Standby, test_env):
-                    standby_paths.append([standby_s2c, standby_c2d])
-        assert len(standby_paths) is not 0
+        for standby_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index):
+            if self.is_path_throughput_met(model, standby_s2c, model.sfc_list[sfc_index].tp, SFCType.Standby, test_env):
+                for standby_c2d in nx.all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d):
+                    if self.is_path_latency_met(model, standby_s2c, standby_c2d,
+                                                model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                    sfc_index].process_latency) and self.is_path_throughput_met(
+                        model,
+                        standby_c2d,
+                        model.sfc_list[
+                            sfc_index].tp,
+                        SFCType.Standby, test_env):
+                        standby_paths.append([standby_s2c, standby_c2d])
+        if len(standby_paths) == 0:
+            return False
 
         # calculate paths for updating
         update_paths = []
-        for path in nx.all_simple_paths(model.topo, active_index, standby_index):
+        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
-        assert len(update_paths) is not 0
+        if len(update_paths) == 0:
+            return False
 
         # select path
         active_path = self.select_path(active_paths, True)
@@ -641,13 +658,13 @@ class DecisionMaker(BaseObject):
         return [active_path, standby_path, update_path]
 
 
-class RandomDecisionMaker(DecisionMaker):
+class RandomDecisionMakerWithGuarantee(DecisionMaker):
     """
     The class used to make random decision
     """
 
     def __init__(self):
-        super(RandomDecisionMaker, self).__init__()
+        super(RandomDecisionMakerWithGuarantee, self).__init__()
 
     def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
         """
@@ -688,6 +705,28 @@ class RandomDecisionMaker(DecisionMaker):
         return decision
 
 
+class RandomDecisionMaker(DecisionMaker):
+    """
+    The class used to make random decision
+    """
+
+    def __init__(self):
+        super(RandomDecisionMaker, self).__init__()
+
+    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+        """
+        generate new decision, don't check if it can be deployed
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param test_env: test environment
+        :return: decision
+        """
+        decision = Decision()
+        decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+        decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+        return decision
+
+
 class RLDecisionMaker(DecisionMaker):
     """
     This class is denoted as a decision maker used reinforcement learning
@@ -701,7 +740,7 @@ class RLDecisionMaker(DecisionMaker):
 def main():
     # import generator
     # topo = generator.generate_topology(30)
-    # for path in nx.all_simple_paths(topo, 15, 16):
+    # for path in nx.all_shortest_paths(topo, 15, 16):
     #     print(path)
     # nx.draw(topo, with_labels=True)
     # plt.show()

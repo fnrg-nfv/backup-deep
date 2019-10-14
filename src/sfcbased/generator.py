@@ -16,6 +16,7 @@ def generate_topology(size: int = 100):
     """
     Function used to generate topology.
     Mainly with three resources: computing resources, bandwidth resources and latency resources.
+    Make sure the whole network is connected
     Notices:
     1. active: the resources occupied by active instance
     2. reserved: the resources reserved by stand-by instance
@@ -34,7 +35,12 @@ def generate_topology(size: int = 100):
     # generate E
     for i in range(size):
         for j in range(i + 1, size):
-            if random.randint(1, 3) == 1:
+            # make sure the whole network is connected
+            if j == i + 1:
+                bandwidth = random.randint(1000, 10000)
+                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
+                continue
+            if random.randint(1, 5) == 1:
                 bandwidth = random.randint(1000, 10000)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
     return topo

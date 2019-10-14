@@ -24,8 +24,8 @@
 
 ## Routing algorithm
 
-- Find all paths that meet throughput and latency requirements；
-- Choose the shortest one。
+- Find all shortest paths；
+- Find the first path that meet the demand。
 
 ## SFC State
 
