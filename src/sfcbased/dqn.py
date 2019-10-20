@@ -10,16 +10,16 @@ class Space(Enum):
 
 class DQN(nn.Module):
 
-    def __init__(self, state_shape: int, action_shape: int):
+    def __init__(self, state_shape: int, action_space: List):
         super(DQN, self).__init__()
         self.layer1 = nn.Linear(state_shape, 10)
         self.layer2 = nn.Linear(10, 10)
-        self.layer3 = nn.Linear(10, action_shape)
+        self.layer3 = nn.Linear(10, len(action_space))
 
         self.bn_input = nn.BatchNorm1d(state_shape)
         self.bn_hidden_1 = nn.BatchNorm1d(10)
         self.bn_hidden_2 = nn.BatchNorm1d(10)
-        self.bn_output = nn.BatchNorm1d(action_shape)
+        self.bn_output = nn.BatchNorm1d(len(action_space))
         self.Tanh = nn.Tanh()
         self.init_weights(3e-2)
 
@@ -65,7 +65,7 @@ class DQNDecisionMaker(DecisionMaker):
         self.gamma = gamma
         self.idx = 0
 
-    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):  # todo modify state type
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         if np.random.random() < self.epsilon:
             action = random.randint(0, len(self.action_space) - 1)
             action_index = action
@@ -86,14 +86,38 @@ class DQNDecisionMaker(DecisionMaker):
 
 
 class DQNAction(Action):
-    def __init__(self, decision: Decision):
+    def __init__(self, active: int, standby: int):
         super().__init__()
-        self.decision = decision
-        self.active = -1
-        self.standby = -1
+        self.active = active
+        self.standby = standby
 
     def get_action(self):
-        return [self.decision.active_server, self.decision.standby_server]
+        return [self.active, self.standby]
+
+    def action2index(self, action_space: List):
+        for i in range(len(action_space)):
+            if action_space[i][0] == self.active and action_space[i][1] == self.standby:
+                return i
+        raise RuntimeError("The action space doesn't contain this action")
+
+
+def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, device: torch.device):
+    states, actions, rewards, next_states = batch
+
+    # transform each action to index(real action)
+    actions = [DQNAction(action[0], action[1]).action2index(action_space) for action in actions]
+
+    states_v = torch.tensor(states).to(device)
+    next_states_v = torch.tensor(next_states).to(device)
+    actions_v = torch.tensor(actions).to(device)
+    rewards_v = torch.tensor(rewards).to(device)
+
+    state_action_values = net(states_v).gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
+    next_state_values = tgt_net(next_states_v).max(1)[0]
+    next_state_values = next_state_values.detach()
+
+    expected_state_action_values = next_state_values * gamma + rewards_v
+    return nn.MSELoss()(state_action_values, expected_state_action_values)
 
 
 class DQNEnvironment(Environment):

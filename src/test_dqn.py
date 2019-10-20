@@ -5,7 +5,7 @@ import torch.optim as optim
 
 # meta-parameters
 topo_size = 30 # topology size
-sfc_size = 800 # number of SFCs
+sfc_size = 20000 # number of SFCs
 duration = 100 # simulation time
 error_rate = 0.1
 test_env = TestEnv.FullyReservation
@@ -30,8 +30,8 @@ model = generate_model(topo_size=topo_size, sfc_size=sfc_size, duration=duration
 STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 
 # create decision maker(agent) & optimizer & environment
-net = DQN(state_shape=STATE_SHAPE, action_shape=ACTION_SHAPE)
-tgt_net = DQN(state_shape=STATE_SHAPE, action_shape=ACTION_SHAPE)
+net = DQN(state_shape=STATE_SHAPE, action_space=ACTION_SPACE)
+tgt_net = DQN(state_shape=STATE_SHAPE, action_space=ACTION_SPACE)
 buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
 
 decision_maker = DQNDecisionMaker(net=net, tgt_net = tgt_net, buffer = buffer, action_space = ACTION_SPACE, epsilon = EPSILON, epsilon_start = EPSILON_START, epsilon_final = EPSILON_FINAL, epsilon_decay = EPSILON_DECAY, device = DEVICE, gamma = GAMMA)
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 idx += 1
                 state = env.get_state(model, i)
                 decision = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
-                action = DQNAction(decision).get_action()
+                action = DQNAction(decision.active_server, decision.standby_server).get_action()
                 reward = env.get_reward(model, i, decision, test_env)
                 next_state = env.get_state(model, i)
 
@@ -77,6 +77,8 @@ if __name__ == "__main__":
 
                 optimizer.zero_grad()
                 batch = decision_maker.buffer.sample(BATCH_SIZE)
-                loss_t = calc_loss(batch, decision_maker.net, tgt_net, gamma=GAMMA, device=DEVICE)
+                loss_t = calc_loss(batch, decision_maker.net, tgt_net, gamma=GAMMA, action_space=ACTION_SPACE, device=DEVICE)
                 loss_t.backward()
                 optimizer.step()
+
+
