@@ -1,61 +1,74 @@
-from sfcbased.model import *
-from sfcbased.detecter import *
+from sfcbased.utils import *
+import torch.optim as optim
+
+def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker, time: int, state: List, test_env: TestEnv):
+    """
+    Deploy each sfc
+    :param model: model
+    :param decision_maker: make decision
+    :param time: time
+    :param state: state
+    :param test_env: test environment
+    :return: decision
+    """
+    if test_env == TestEnv.NoBackup:
+        assert model.sfc_list[sfc_index].state == State.Undeployed
+        decision = decision_maker.make_decision(model, sfc_index, state, test_env)
+
+        # Undeployed→Failed
+        if not decision:
+            model.sfc_list[sfc_index].set_state(time, sfc_index, State.Failed)
+            return decision
+
+        # Undeployed→Normal
+        else:
+            model.sfc_list[sfc_index].active_sfc.server = decision.active_server
+            model.sfc_list[sfc_index].active_sfc.path_s2c = decision.active_path_s2c
+            model.sfc_list[sfc_index].active_sfc.path_c2d = decision.active_path_c2d
+            deploy_active(model, sfc_index, test_env)
+            model.sfc_list[sfc_index].set_state(time, sfc_index, State.Normal)
+            return decision
+
+    # with backup
+    else:
+        assert model.sfc_list[sfc_index].state == State.Undeployed
+        decision = decision_maker.make_decision(model, sfc_index, state, test_env)
+
+        # Undeployed→Failed
+        if not decision:
+            model.sfc_list[sfc_index].set_state(time, sfc_index, State.Failed)
+            return decision
+
+        # Undeployed→Normal
+        else:
+            model.sfc_list[sfc_index].active_sfc.server = decision.active_server
+            model.sfc_list[sfc_index].standby_sfc.server = decision.standby_server
+            model.sfc_list[sfc_index].active_sfc.path_s2c = decision.active_path_s2c
+            model.sfc_list[sfc_index].active_sfc.path_c2d = decision.active_path_c2d
+            model.sfc_list[sfc_index].standby_sfc.path_s2c = decision.standby_path_s2c
+            model.sfc_list[sfc_index].standby_sfc.path_c2d = decision.standby_path_c2d
+            model.sfc_list[sfc_index].update_path = decision.update_path
+            deploy_active(model, sfc_index, test_env)
+            deploy_standby(model, sfc_index, test_env)
+            model.sfc_list[sfc_index].set_state(time, sfc_index, State.Normal)
+            return decision
 
 
 def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: int, test_env: TestEnv):
     """
-    Deploy the sfcs located in given timeslot.
+    Deploy the sfcs located in given timeslot with classic algorithm.
     :param model: model
     :param decision_maker: make decision
     :param time: time
     :param test_env: test environment
     :return: nothing
     """
+    for i in range(len(model.sfc_list)):
+        # for each sfc which locate in this time slot
+        if time <= model.sfc_list[i].time < time + 1:
+            deploy_sfc_item(model, i, decision_maker, time, test_env)
 
-    # no backup, don't need to place stand-by instance
-    if test_env == TestEnv.NoBackup:
-        for i in range(len(model.sfc_list)):
-            # for each sfc which locate in this time slot
-            if time <= model.sfc_list[i].time < time + 1:
-                assert model.sfc_list[i].state == State.Undeployed
-                decision = decision_maker.make_decision(model, i, test_env)
 
-                # Undeployed→Failed
-                if not decision:
-                    model.sfc_list[i].set_state(time, i, State.Failed)
-
-                # Undeployed→Normal
-                else:
-                    model.sfc_list[i].active_sfc.server = decision.active_server
-                    model.sfc_list[i].active_sfc.path_s2c = decision.active_path_s2c
-                    model.sfc_list[i].active_sfc.path_c2d = decision.active_path_c2d
-                    deploy_active(model, i, test_env)
-                    model.sfc_list[i].set_state(time, i, State.Normal)
-
-    # with backup
-    else:
-        for i in range(len(model.sfc_list)):
-            # for each sfc which locate in this time slot
-            if time <= model.sfc_list[i].time < time + 1:
-                assert model.sfc_list[i].state == State.Undeployed
-                decision = decision_maker.make_decision(model, i, test_env)
-
-                # Undeployed→Failed
-                if not decision:
-                    model.sfc_list[i].set_state(time, i, State.Failed)
-
-                # Undeployed→Normal
-                else:
-                    model.sfc_list[i].active_sfc.server = decision.active_server
-                    model.sfc_list[i].standby_sfc.server = decision.standby_server
-                    model.sfc_list[i].active_sfc.path_s2c = decision.active_path_s2c
-                    model.sfc_list[i].active_sfc.path_c2d = decision.active_path_c2d
-                    model.sfc_list[i].standby_sfc.path_s2c = decision.standby_path_s2c
-                    model.sfc_list[i].standby_sfc.path_c2d = decision.standby_path_c2d
-                    model.sfc_list[i].update_path = decision.update_path
-                    deploy_active(model, i, test_env)
-                    deploy_standby(model, i, test_env)
-                    model.sfc_list[i].set_state(time, i, State.Normal)
 
 
 def deploy_active(model: Model, sfc_index: int, test_env: TestEnv):
@@ -356,7 +369,7 @@ def remove_expired_standby(model: Model, sfc_index: int, test_env: TestEnv):
         remove_reservation(model, sfc_index)
 
 
-def state_tansition_and_resource_reclaim(model: Model, time: int, test_env: TestEnv, failed_instances: List[Instance]):
+def state_transition_and_resource_reclaim(model: Model, time: int, test_env: TestEnv, failed_instances: List[Instance]):
     """
     In each time slot, handle state transition and reclaim resources.
     :param model: model
@@ -417,7 +430,7 @@ def process_time_slot(model: Model, decision_maker: DecisionMaker, time: int, te
     # 2. - Normal→Broken;
     # 3. - Backup→Broken.
     # are processed in this function
-    state_tansition_and_resource_reclaim(model, time, test_env, failed_instances)
+    state_transition_and_resource_reclaim(model, time, test_env, failed_instances)
 
     # Deploy sfc in this time slot
     # The transition:

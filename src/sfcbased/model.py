@@ -20,6 +20,12 @@ class BaseObject(object):
 
 
 @unique
+class SolutionType(Enum):
+    Classic = 0
+    RL = 1
+
+
+@unique
 class BrokenReason(Enum):
     NoReason = 0
     TimeExpired = 1
@@ -486,25 +492,27 @@ class DecisionMaker(BaseObject):
         return False
 
     @abstractmethod
-    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         """
         generate new decision, don't check if it can be deployed
         :param model: model
         :param cur_sfc_index: current sfc index
+        :param state: state
         :param test_env: test environment
         :return: decision
         """
         return Decision()
 
-    def make_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+    def make_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):  # todo: make state more regulated
         """
         make deploy decisions, and check up if this decision can be placed, consider no backup and with backup
         :param model: the model
         :param cur_sfc_index: cur index of sfc
+        :param state: state
         :param test_env: test environment
-        :return: if success, return the decision list, else return False
+        :return: if success, return the decision instance, else return False
         """
-        decision = self.generate_decision(model, cur_sfc_index, test_env)
+        decision = self.generate_decision(model, cur_sfc_index, state, test_env)
         if decision.active_server == VariableState.Uninitialized:
             return False
 
@@ -690,7 +698,7 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
         decision = random.sample(decisions, 1)[0]
         return decision
 
-    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv, state: List):  # todo
         """
         generate new decision, don't check if it can be deployed
         :param model: model
@@ -713,7 +721,7 @@ class RandomDecisionMaker(DecisionMaker):
     def __init__(self):
         super(RandomDecisionMaker, self).__init__()
 
-    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv, state: List):
         """
         generate new decision, don't check if it can be deployed
         :param model: model
@@ -725,15 +733,6 @@ class RandomDecisionMaker(DecisionMaker):
         decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         return decision
-
-
-class RLDecisionMaker(DecisionMaker):
-    """
-    This class is denoted as a decision maker used reinforcement learning
-    """
-
-    def __int__(self):
-        super(RLDecisionMaker, self).__init__()
 
 
 # test

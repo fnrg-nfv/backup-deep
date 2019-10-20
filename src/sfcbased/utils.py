@@ -1,15 +1,87 @@
-from torch.autograd import Variable
 import torch
+import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
 import csv
-import sys
+import collections
 from ast import literal_eval
+from sfcbased.model import *
 
-__author__ = "tristone"
-__copyright__ = "Copyright (c) 2019"
-__email__ = "tristone13th@outlook.com"
 
+class Action:
+    pass
+
+
+class Environment:
+
+    @abstractmethod
+    def get_reward(self, model: Model, sfc_index: int, decision: Decision, test_env: TestEnv):
+        return 0
+
+    @abstractmethod
+    def get_state(self, model: Model, sfc_index: int):
+        return 0
+
+
+Experience = collections.namedtuple('Experience', field_names=['state', 'action', 'reward', 'new_state'])
+
+
+class ExperienceBuffer:
+    """
+    Experience buffer class
+    """
+
+    def __init__(self, capacity: int):
+        self.buffer = collections.deque(maxlen=capacity)
+
+    def __len__(self):
+        return len(self.buffer)
+
+    def append(self, experience: Experience):
+        """
+        Append an experience item
+        :param experience: experience item
+        :return: nothing
+        """
+        self.buffer.append(experience)
+
+    def sample(self, batch_size: int):
+        """
+        Sample a batch from this buffer
+        :param batch_size: sample size
+        :return: batch: List
+        """
+        indices = np.random.choice(len(self.buffer), batch_size, replace=False)
+        states, actions, rewards, next_states = zip(*[self.buffer[idx] for idx in indices])
+        return states, actions, rewards, next_states
+
+
+def calc_loss(batch, net, tgt_net, gamma: float, device: torch.device):
+    states, actions, rewards, next_states = batch
+
+    states_v = torch.tensor(states).to(device)
+    next_states_v = torch.tensor(next_states).to(device)
+    actions_v = torch.tensor(actions).to(device)
+    rewards_v = torch.tensor(rewards).to(device)
+
+    state_action_values = net(states_v).gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
+    next_state_values = tgt_net(next_states_v).max(1)[0]
+    next_state_values = next_state_values.detach()
+
+    expected_state_action_values = next_state_values * gamma + rewards_v
+    return nn.MSELoss()(state_action_values, expected_state_action_values)
+
+
+def fanin_init(size, fanin=None):
+    """
+    Init weights
+    :param size: tensor size
+    :param fanin:
+    :return:
+    """
+    fanin = fanin or size[0]
+    v = 1. / np.sqrt(fanin)
+    return torch.Tensor(size).uniform_(-v, v)
 
 
 def printAction(action, window):
@@ -52,8 +124,10 @@ def plotActionTrace(action_trace):
     plt.tight_layout()
     plt.show()
 
+
 def main():
     pass
+
 
 if __name__ == '__main__':
     main()

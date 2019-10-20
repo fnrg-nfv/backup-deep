@@ -76,6 +76,11 @@ The state transition graph as following:
 
 ## State
 
+Mainly consider three components:
+
+- Remaining resources(both computing and bandwidth);
+- Current sfc's attributes.
+
 ## Action
 
 - Location of active instance;
@@ -88,18 +93,23 @@ The state transition graph as following:
 
 ## Reward
 
-Mainly three components:
+Mainly two aspects:
 
-- If this SFC is **accepted**;
-- If this SFC's active instance placed good or not;
-- If this SFC's stand-by instance placed good or not.
+The first is **Total Acceptance Rate**, The second is **Fail Rate**.
 
-So how to determine an instance is placed good or not? We should consider a function which can compute this, this function has four main parameters:
+### Which factor matters for Total Acceptance Rate?
 
-- The placed server's **computing resource**;
-- The **active** area;
-- The **max** computing resource of all stand-by instances;
-- The number of stand-by instances placed on this server.
+- **Individual accept state**: If accept then 1, else 0;
+- **Degree(active server)**: The more, the worse;
+- **Degree(stand-by server)**: The more, the worse; **optional**;
+- **Throughput(all paths)**: The more, the worse.
+
+### Which factor matters for Fail Rate?
+
+The only reason which will influent the fail rate is that **the stand-by instance did not start successfully;** and the only reason that a stand-by instance start failed is the **lack of resources(both node and edge)**.
+
+- **Active area**: The more, the worse;
+- **Stand-by area**: The more, the worse.
 
 # Others
 

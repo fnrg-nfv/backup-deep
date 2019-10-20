@@ -12,6 +12,19 @@ fig, ax = plt.subplots()
 fig.set_tight_layout(False)
 
 
+def generate_action_space(size: int):
+    """
+    Generate action space which contains all actions
+    :param size: space size
+    :return: action space
+    """
+    action_space = []
+    for i in range(size):
+        for j in range(size):
+            action_space.append([i, j])
+    return action_space
+
+
 def generate_topology(size: int = 100):
     """
     Function used to generate topology.
@@ -86,6 +99,7 @@ def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 10
     topo = generate_topology(size=topo_size)
     sfc_list = generate_sfc_list(topo=topo, size=sfc_size, duration=duration)
     return Model(topo, sfc_list)
+
 
 def generate_failed_instances_time_slot(model: Model, time: int, error_rate: float):
     """

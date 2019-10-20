@@ -6,6 +6,12 @@ This class is denoted as the path from one server to another.
 - **latency(float)**: latency occupied;
 - **path_length**: the length of this path.
 
+# Action
+
+This class is denoted as an action.
+
+Actually this class is the same as int class.
+
 # Monitor
 
 Designed for Monitoring the actions of whole system.
