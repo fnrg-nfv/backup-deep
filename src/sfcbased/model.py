@@ -510,40 +510,39 @@ class DecisionMaker(BaseObject):
         :param cur_sfc_index: cur index of sfc
         :param state: state
         :param test_env: test environment
-        :return: if success, return the decision instance, else return False
+        :return: success or failed, the real decision
         """
         decision = self.generate_decision(model, cur_sfc_index, state, test_env)
-        if decision.active_server == VariableState.Uninitialized:
-            return False
+        assert decision.active_server != VariableState.Uninitialized
 
         # servers met or not
         if model.topo.nodes[decision.active_server]["computing_resource"] - model.topo.nodes[decision.active_server][
             "active"] - \
                 model.topo.nodes[decision.active_server]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
-            return False
+            return False, decision
         if test_env == TestEnv.Aggressive:
             if model.topo.nodes[decision.standby_server]["computing_resource"] < model.sfc_list[
                 cur_sfc_index].computing_resource:
-                return False
+                return False, decision
         if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
             if model.topo.nodes[decision.standby_server]["computing_resource"] - \
                     model.topo.nodes[decision.standby_server][
                         "active"] < \
                     model.sfc_list[cur_sfc_index].computing_resource:
-                return False
+                return False, decision
         if test_env == TestEnv.FullyReservation:
             if model.topo.nodes[decision.standby_server]["computing_resource"] - \
                     model.topo.nodes[decision.standby_server][
                         "active"] - \
                     model.topo.nodes[decision.standby_server]["reserved"] < model.sfc_list[
                 cur_sfc_index].computing_resource:
-                return False
+                return False, decision
 
         # paths met or not
 
         paths = self.select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
         if not paths:
-            return False
+            return False, decision
 
         if test_env != TestEnv.NoBackup:
             decision.set_active_path_s2c(paths[0][0])
@@ -554,7 +553,7 @@ class DecisionMaker(BaseObject):
         else:
             decision.set_active_path_s2c(paths[0])
             decision.set_active_path_c2d(paths[1])
-        return decision
+        return True, decision
 
     def select_path(self, path_set: List, coupled: bool):
         """

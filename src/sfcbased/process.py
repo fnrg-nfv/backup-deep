@@ -13,10 +13,10 @@ def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker,
     """
     if test_env == TestEnv.NoBackup:
         assert model.sfc_list[sfc_index].state == State.Undeployed
-        decision = decision_maker.make_decision(model, sfc_index, state, test_env)
+        flag, decision = decision_maker.make_decision(model, sfc_index, state, test_env)
 
         # Undeployed→Failed
-        if not decision:
+        if not flag:
             model.sfc_list[sfc_index].set_state(time, sfc_index, State.Failed)
             return decision
 
@@ -32,10 +32,10 @@ def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker,
     # with backup
     else:
         assert model.sfc_list[sfc_index].state == State.Undeployed
-        decision = decision_maker.make_decision(model, sfc_index, state, test_env)
+        flag, decision = decision_maker.make_decision(model, sfc_index, state, test_env)
 
         # Undeployed→Failed
-        if not decision:
+        if not flag:
             model.sfc_list[sfc_index].set_state(time, sfc_index, State.Failed)
             return decision
 
