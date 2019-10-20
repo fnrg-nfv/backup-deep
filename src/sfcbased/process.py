@@ -54,19 +54,20 @@ def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker,
             return decision
 
 
-def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: int, test_env: TestEnv):
+def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: int, state: List, test_env: TestEnv):
     """
     Deploy the sfcs located in given timeslot with classic algorithm.
     :param model: model
     :param decision_maker: make decision
     :param time: time
+    :param state: state
     :param test_env: test environment
     :return: nothing
     """
     for i in range(len(model.sfc_list)):
         # for each sfc which locate in this time slot
         if time <= model.sfc_list[i].time < time + 1:
-            deploy_sfc_item(model, i, decision_maker, time, test_env)
+            deploy_sfc_item(model, i, decision_maker, time, state, test_env)
 
 
 
@@ -413,14 +414,15 @@ def state_transition_and_resource_reclaim(model: Model, time: int, test_env: Tes
 
 
 def process_time_slot(model: Model, decision_maker: DecisionMaker, time: int, test_env: TestEnv,
-                      failed_instances: List[Instance]):
+                      state: List, failed_instances: List[Instance]):
     """
     Function used to simulate within given time slot
-    :param test_env:
-    :param failed_instances:
+    :param test_env: test environment
+    :param failed_instances: failed instances
     :param model: model environment
     :param decision_maker: decision maker
     :param time: time
+    :param state: state
     :return: nothing
     """
 
@@ -437,4 +439,4 @@ def process_time_slot(model: Model, decision_maker: DecisionMaker, time: int, te
     # 1. - Undeployed→Failed;
     # 2. - Undeployed→Normal.
     # are processed in this function
-    deploy_sfcs_in_timeslot(model, decision_maker, time, test_env)
+    deploy_sfcs_in_timeslot(model, decision_maker, time, state, test_env)

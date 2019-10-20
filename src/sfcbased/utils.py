@@ -20,7 +20,15 @@ class Environment:
 
     @abstractmethod
     def get_state(self, model: Model, sfc_index: int):
+        return []
+
+
+class NormalEnvironment(Environment):
+    def get_reward(self, model: Model, sfc_index: int, decision: Decision, test_env: TestEnv):
         return 0
+
+    def get_state(self, model: Model, sfc_index: int):
+        return []
 
 
 Experience = collections.namedtuple('Experience', field_names=['state', 'action', 'reward', 'new_state'])
