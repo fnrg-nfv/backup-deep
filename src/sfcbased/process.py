@@ -1,5 +1,4 @@
 from sfcbased.utils import *
-import torch.optim as optim
 
 def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker, time: int, state: List, test_env: TestEnv):
     """

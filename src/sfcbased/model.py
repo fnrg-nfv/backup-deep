@@ -2,7 +2,7 @@ from typing import List
 import networkx as nx
 from enum import Enum, unique
 import random
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 
 class VirtualException(BaseException):

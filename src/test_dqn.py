@@ -1,4 +1,5 @@
 from tqdm import tqdm
+import torch.optim as optim
 from generate_topo import *
 
 # parameters with rl
@@ -73,4 +74,8 @@ if __name__ == "__main__":
                 loss_t.backward()
                 optimizer.step()
 
+    Monitor.print_log()
 
+    # model.print_start_and_down()
+
+    print(model.calculate_fail_rate())

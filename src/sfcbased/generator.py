@@ -1,11 +1,8 @@
 import matplotlib.pyplot as plt
-import random
 import warnings
 import matplotlib.cbook
 import math
-
 from sfcbased.model import *
-import sfcbased.sampler as sampler
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
 fig, ax = plt.subplots()
@@ -71,7 +68,10 @@ def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
     nodes_len = len(topo.nodes)
 
     # list of sample in increasing order
-    timeslot_list = sampler.uniform(0, duration, size)
+    timeslot_list = []
+    for i in range(size):
+        timeslot_list.append(random.uniform(0, duration))
+    timeslot_list.sort()
 
     # generate each sfc
     for i in range(size):

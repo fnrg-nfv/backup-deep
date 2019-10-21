@@ -12,13 +12,13 @@ class DQN(nn.Module):
 
     def __init__(self, state_shape: int, action_space: List):
         super(DQN, self).__init__()
-        self.layer1 = nn.Linear(state_shape, 10)
-        self.layer2 = nn.Linear(10, 10)
-        self.layer3 = nn.Linear(10, len(action_space))
+        self.layer1 = nn.Linear(state_shape, 5)
+        self.layer2 = nn.Linear(5, 5)
+        self.layer3 = nn.Linear(5, len(action_space))
 
         self.bn_input = nn.BatchNorm1d(state_shape)
-        self.bn_hidden_1 = nn.BatchNorm1d(10)
-        self.bn_hidden_2 = nn.BatchNorm1d(10)
+        self.bn_hidden_1 = nn.BatchNorm1d(5)
+        self.bn_hidden_2 = nn.BatchNorm1d(5)
         self.bn_output = nn.BatchNorm1d(len(action_space))
         self.Tanh = nn.Tanh()
         self.init_weights(3e-2)
@@ -126,12 +126,10 @@ class DQNEnvironment(Environment):
         super().__init__()
 
     def get_reward(self, model: Model, sfc_index: int, decision: Decision, test_env: TestEnv):
-        if not decision:
+        if model.sfc_list[sfc_index].state == State.Failed:
             return 0
-        alpha = 0.1
-        beta = 0.1
-        gamma = 0.1
-        return 0
+        if model.sfc_list[sfc_index].state == State.Normal:
+            return 1
 
     def get_state(self, model: Model, sfc_index: int):
         """
