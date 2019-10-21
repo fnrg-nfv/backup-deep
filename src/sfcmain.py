@@ -1,14 +1,8 @@
-from sfcbased import *
 from tqdm import tqdm
+from generate_topo import *
 
-# meta-parameters
-topo_size = 30 # topology size
-sfc_size = 800 # number of SFCs
-duration = 100 # simulation time
-error_rate = 0.1
-test_env = TestEnv.FullyReservation
-
-model = generate_model(topo_size=topo_size, sfc_size=sfc_size, duration=duration)
+with open(file_name, 'rb') as f:
+    model = pickle.load(f)   # read file and build object
 
 decision_maker = RandomDecisionMaker()
 

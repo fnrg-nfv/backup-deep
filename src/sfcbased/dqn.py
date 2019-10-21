@@ -107,16 +107,17 @@ def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, device: tor
     # transform each action to index(real action)
     actions = [DQNAction(action[0], action[1]).action2index(action_space) for action in actions]
 
-    states_v = torch.tensor(states).to(device)
-    next_states_v = torch.tensor(next_states).to(device)
-    actions_v = torch.tensor(actions).to(device)
-    rewards_v = torch.tensor(rewards).to(device)
+    states_v = torch.tensor(states, dtype=torch.float).to(device)
+    next_states_v = torch.tensor(next_states, dtype=torch.float).to(device)
+    actions_v = torch.tensor(actions, dtype=torch.long).to(device)
+    rewards_v = torch.tensor(rewards, dtype=torch.float).to(device)
 
     state_action_values = net(states_v).gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
     next_state_values = tgt_net(next_states_v).max(1)[0]
     next_state_values = next_state_values.detach()
 
     expected_state_action_values = next_state_values * gamma + rewards_v
+
     return nn.MSELoss()(state_action_values, expected_state_action_values)
 
 

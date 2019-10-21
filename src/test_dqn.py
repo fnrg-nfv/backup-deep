@@ -1,14 +1,5 @@
 from tqdm import tqdm
-from sfcbased import *
-import torch
-import torch.optim as optim
-
-# meta-parameters
-topo_size = 30 # topology size
-sfc_size = 20000 # number of SFCs
-duration = 100 # simulation time
-error_rate = 0.1
-test_env = TestEnv.FullyReservation
+from generate_topo import *
 
 # parameters with rl
 GAMMA = 0.99
@@ -26,7 +17,8 @@ ACTION_SPACE = generate_action_space(size=topo_size)
 DEVICE = torch.device("cpu")
 
 # create model
-model = generate_model(topo_size=topo_size, sfc_size=sfc_size, duration=duration)
+with open(file_name, 'rb') as f:
+    model = pickle.load(f)   # read file and build object
 STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 
 # create decision maker(agent) & optimizer & environment
