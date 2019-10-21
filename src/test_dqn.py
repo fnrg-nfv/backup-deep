@@ -4,14 +4,14 @@ from generate_topo import *
 
 # parameters with rl
 GAMMA = 0.99
-BATCH_SIZE = 32
+BATCH_SIZE = 2000
 
 ACTION_SHAPE = 2
-REPLAY_SIZE = 10000
+REPLAY_SIZE = 5000
 EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.02
-EPSILON_DECAY = 10 ** 5
+EPSILON_DECAY = duration
 LEARNING_RATE = 1e-4
 SYNC_INTERVAL = 5
 ACTION_SPACE = generate_action_space(size=topo_size)
@@ -20,7 +20,7 @@ DEVICE = torch.device("cpu")
 # create model
 with open(file_name, 'rb') as f:
     model = pickle.load(f)   # read file and build object
-STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
+STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 2 + 7
 
 # create decision maker(agent) & optimizer & environment
 net = DQN(state_shape=STATE_SHAPE, action_space=ACTION_SPACE)
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
                 optimizer.zero_grad()
                 batch = decision_maker.buffer.sample(BATCH_SIZE)
-                loss_t = calc_loss(batch, decision_maker.net, tgt_net, gamma=GAMMA, action_space=ACTION_SPACE, device=DEVICE)
+                loss_t = calc_loss(batch, decision_maker.net, decision_maker.tgt_net, gamma=GAMMA, action_space=ACTION_SPACE, device=DEVICE)
                 loss_t.backward()
                 optimizer.step()
 
@@ -79,3 +79,5 @@ if __name__ == "__main__":
     # model.print_start_and_down()
 
     print(model.calculate_fail_rate())
+
+    print(model.calculate_accept_rate())

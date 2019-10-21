@@ -12,13 +12,12 @@ class DQN(nn.Module):
 
     def __init__(self, state_shape: int, action_space: List):
         super(DQN, self).__init__()
-        self.layer1 = nn.Linear(state_shape, 5)
-        self.layer2 = nn.Linear(5, 5)
-        self.layer3 = nn.Linear(5, len(action_space))
+        self.layer1 = nn.Linear(state_shape, 20)
+        self.layer2 = nn.Linear(20, 20)
+        self.layer3 = nn.Linear(20, len(action_space))
 
-        self.bn_input = nn.BatchNorm1d(state_shape)
-        self.bn_hidden_1 = nn.BatchNorm1d(5)
-        self.bn_hidden_2 = nn.BatchNorm1d(5)
+        self.bn_hidden_1 = nn.BatchNorm1d(20)
+        self.bn_hidden_2 = nn.BatchNorm1d(20)
         self.bn_output = nn.BatchNorm1d(len(action_space))
         self.Tanh = nn.Tanh()
         self.init_weights(3e-2)
@@ -29,8 +28,6 @@ class DQN(nn.Module):
         self.layer3.weight.data.uniform_(-init_w, init_w)
 
     def forward(self, x):
-        x = self.bn_input(x)
-
         x = self.layer1(x)
         x = self.bn_hidden_1(x)
         x = self.Tanh(x)
@@ -77,6 +74,7 @@ class DQNDecisionMaker(DecisionMaker):
             _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
             action_index = int(act_v.item())  # returns the value of this tensor as a standard Python number. This only works for tensors with one element.
         action = self.action_space[action_index]
+        print(action)
         decision = Decision()
         decision.active_server = action[0]
         decision.standby_server = action[1]
@@ -149,13 +147,11 @@ class DQNEnvironment(Environment):
         # first part
         # node state
         for node in model.topo.nodes(data=True):
-            state.append(node[1]['computing_resource'])
             state.append(node[1]['active'])
             state.append(node[1]['reserved'])
 
         # edge state
         for edge in model.topo.edges(data=True):
-            state.append(edge[2]['bandwidth'])
             state.append(edge[2]['active'])
             state.append(edge[2]['reserved'])
 

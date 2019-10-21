@@ -6,8 +6,8 @@ with open(file_name, 'rb') as f:
 
 decision_maker = RandomDecisionMaker()
 
-nx.draw(model.topo, with_labels=True)
-plt.show()
+# nx.draw(model.topo, with_labels=True)
+# plt.show()
 
 env = NormalEnvironment()
 
@@ -21,6 +21,8 @@ Monitor.print_log()
 # model.print_start_and_down()
 
 print(model.calculate_fail_rate())
+
+print(model.calculate_accept_rate())
 
 print("\nDone!")
 

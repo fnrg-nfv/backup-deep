@@ -344,6 +344,16 @@ class Model(BaseObject):
                         cur_sfc.standby_sfc.downtime - cur_sfc.standby_sfc.starttime)
         return real_not_service / should_not_service
 
+    def calculate_accept_rate(self):
+        """
+        Calculate accept rate
+        :return:
+        """
+        num = 0
+        for item in self.sfc_list:
+            if item.state == State.Failed:
+                num += 1
+        return 1 - num / len(self.sfc_list)
 
 class DecisionMaker(BaseObject):
     """
