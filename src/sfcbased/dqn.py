@@ -10,37 +10,95 @@ class Space(Enum):
 
 class DQN(nn.Module):
 
-    def __init__(self, state_shape: int, action_space: List):
+    def __init__(self, model: Model):
         super(DQN, self).__init__()
-        self.layer1 = nn.Linear(state_shape, 20)
-        self.layer2 = nn.Linear(20, 20)
-        self.layer3 = nn.Linear(20, len(action_space))
 
-        self.bn_hidden_1 = nn.BatchNorm1d(20)
-        self.bn_hidden_2 = nn.BatchNorm1d(20)
-        self.bn_output = nn.BatchNorm1d(len(action_space))
+        self.num_server = len(model.topo.nodes)
+        self.num_edge = len(model.topo.edges)
+
+        self.edge_num_server = [0 for _ in range(self.num_server)] # number of edges of each server
+        self.edge_index_server = [[] for _ in range(self.num_server)] # index of edges occupied by specific server
+
+        # compute the num of edges occupied by each server and the index of them, so that we can build the forward topology easily
+        # note: this part is strongly coupled with the get_start() function, please make them compatible to each other
+        # 1. add the server
+        start = 0
+        for i in range(self.num_server):
+            self.edge_index_server[i].extend([start, start + 1])
+            start += 2
+
+        # 2. add the edge
+        start = self.num_server * 2
+        for edge in model.topo.edges:
+            self.edge_num_server[edge[0]] += 1
+            self.edge_num_server[edge[1]] += 1
+            self.edge_index_server[edge[0]].extend([start, start + 1])
+            self.edge_index_server[edge[1]].extend([start, start + 1])
+            start += 2
+
+        # 3. add the sfc's state
+        start = self.num_server * 2 + self.num_edge * 2
+        for i in range(self.num_server):
+            self.edge_index_server[i].extend(range(start, start + 7))
+
+        # create the layers
+        # bn
+        self.bn_list = nn.ModuleList()
+        for i in range(self.num_server):
+            layer_bn = nn.BatchNorm1d(len(self.edge_index_server[i]))
+            self.bn_list.append(layer_bn)
+
+        # 1. first layer
+        self.layer1_list = nn.ModuleList()
+        for i in range(self.num_server):
+            layer1 = nn.Linear(len(self.edge_index_server[i]), 3)
+            self.layer1_list.append(layer1)
+
+        # 2. second layer
+        self.layer2_list = nn.ModuleList()
+        for i in range(self.num_server):
+            layer2 = nn.Linear(3, 2)
+            self.layer2_list.append(layer2)
+
+        # 3. third layer
+        self.layer3_list = nn.ModuleList()
+        for i in range(self.num_server * self.num_server):
+            layer3 = nn.Linear(2, 1)
+            self.layer3_list.append(layer3)
+
         self.Tanh = nn.Tanh()
         self.init_weights(3e-2)
 
     def init_weights(self, init_w):
-        self.layer1.weight.data = fanin_init(self.layer1.weight.data.size())
-        self.layer2.weight.data = fanin_init(self.layer2.weight.data.size())
-        self.layer3.weight.data.uniform_(-init_w, init_w)
+        for layer in self.layer1_list:
+            layer.weight.data = fanin_init(layer.weight.data.size())
+        for layer in self.layer2_list:
+            layer.weight.data = fanin_init(layer.weight.data.size())
+        for layer in self.layer3_list:
+            layer.weight.data = fanin_init(layer.weight.data.size())
 
     def forward(self, x):
-        x = self.layer1(x)
-        x = self.bn_hidden_1(x)
-        x = self.Tanh(x)
+        layer1_outputs = []
+        for i in range(self.num_server):
+            input = x.index_select(1, torch.tensor(data=self.edge_index_server[i], dtype=torch.long))
+            layer1_outputs.append(self.Tanh(self.layer1_list[i](self.bn_list[i](input))))
 
-        x = self.layer2(x)
-        x = self.bn_hidden_2(x)
-        x = self.Tanh(x)
+        layer2_outputs = []
+        for i in range(self.num_server):
+            input = layer1_outputs[i]
+            layer2_outputs.append(self.Tanh(self.layer2_list[i](input)))
 
-        x = self.layer3(x)
-        x = self.bn_output(x)
-        x = self.Tanh(x)
+        layer3_outputs = []
+        for i in range(self.num_server * self.num_server):
+            active_index = i // self.num_server
+            stand_by_index = i % self.num_server
+            active_action = layer2_outputs[active_index].index_select(1, torch.tensor(data=[0], dtype=torch.long))
+            standby_action = layer2_outputs[stand_by_index].index_select(1, torch.tensor(data=[1], dtype=torch.long))
+            input = torch.cat([active_action, standby_action], 1)
+            layer3_outputs.append(self.Tanh(self.layer3_list[i](input)))
 
-        return x
+        output = torch.cat(layer3_outputs, 1)
+        return output
 
 
 class DQNDecisionMaker(DecisionMaker):
@@ -68,13 +126,13 @@ class DQNDecisionMaker(DecisionMaker):
             action_index = action
         else:
             state_a = np.array([state], copy=False)  # make state vector become a state matrix
-            state_v = torch.tensor(state_a, dtype = torch.float).to(self.device)  # transfer to tensor class
+            state_v = torch.tensor(state_a, dtype=torch.float).to(self.device)  # transfer to tensor class
             self.net.eval()
             q_vals_v = self.net(state_v)  # input to network, and get output
             _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
             action_index = int(act_v.item())  # returns the value of this tensor as a standard Python number. This only works for tensors with one element.
         action = self.action_space[action_index]
-        print(action)
+        # print(action)
         decision = Decision()
         decision.active_server = action[0]
         decision.standby_server = action[1]
@@ -145,12 +203,12 @@ class DQNEnvironment(Environment):
         state = []
 
         # first part
-        # node state
+        # 1. node state
         for node in model.topo.nodes(data=True):
             state.append(node[1]['active'])
             state.append(node[1]['reserved'])
 
-        # edge state
+        # 2. edge state
         for edge in model.topo.edges(data=True):
             state.append(edge[2]['active'])
             state.append(edge[2]['reserved'])

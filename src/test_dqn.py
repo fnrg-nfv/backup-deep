@@ -23,8 +23,8 @@ with open(file_name, 'rb') as f:
 STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 2 + 7
 
 # create decision maker(agent) & optimizer & environment
-net = DQN(state_shape=STATE_SHAPE, action_space=ACTION_SPACE)
-tgt_net = DQN(state_shape=STATE_SHAPE, action_space=ACTION_SPACE)
+net = DQN(model=model)
+tgt_net = DQN(model=model)
 buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
 
 decision_maker = DQNDecisionMaker(net=net, tgt_net = tgt_net, buffer = buffer, action_space = ACTION_SPACE, epsilon = EPSILON, epsilon_start = EPSILON_START, epsilon_final = EPSILON_FINAL, epsilon_decay = EPSILON_DECAY, device = DEVICE, gamma = GAMMA)
