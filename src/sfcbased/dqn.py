@@ -1,7 +1,7 @@
 import torch.nn as nn
 from sfcbased.utils import *
 from sfcbased.model import *
-
+# import torchsnooper
 
 @unique
 class Space(Enum):
@@ -10,8 +10,10 @@ class Space(Enum):
 
 class DQN(nn.Module):
 
-    def __init__(self, model: Model):
+    def __init__(self, model: Model, device):
         super(DQN, self).__init__()
+
+        self.device = device
 
         self.num_server = len(model.topo.nodes)
         self.num_edge = len(model.topo.edges)
@@ -67,20 +69,28 @@ class DQN(nn.Module):
             self.layer3_list.append(layer3)
 
         self.Tanh = nn.Tanh()
-        self.init_weights(3e-2)
+        self.init_weights(3e2)
 
     def init_weights(self, init_w):
+        for layer in self.bn_list:
+            layer.weight.data = fanin_init(layer.weight.data.size(), init_w, device=self.device)
+            layer.bias.data = fanin_init(layer.bias.data.size(), init_w, device=self.device)
+            layer.running_mean.data = fanin_init(layer.running_mean.data.size(), init_w, device=self.device)
+            layer.running_var.data = fanin_init(layer.running_var.data.size(), init_w, device=self.device)
         for layer in self.layer1_list:
-            layer.weight.data = fanin_init(layer.weight.data.size())
+            layer.weight.data = fanin_init(layer.weight.data.size(), init_w, device=self.device)
+            layer.bias.data = fanin_init(layer.bias.data.size(), init_w, device=self.device)
         for layer in self.layer2_list:
-            layer.weight.data = fanin_init(layer.weight.data.size())
+            layer.weight.data = fanin_init(layer.weight.data.size(), init_w, device=self.device)
+            layer.bias.data = fanin_init(layer.bias.data.size(), init_w, device=self.device)
         for layer in self.layer3_list:
-            layer.weight.data = fanin_init(layer.weight.data.size())
+            layer.weight.data = fanin_init(layer.weight.data.size(), init_w, device=self.device)
+            layer.bias.data = fanin_init(layer.bias.data.size(), init_w, device=self.device)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         layer1_outputs = []
         for i in range(self.num_server):
-            input = x.index_select(1, torch.tensor(data=self.edge_index_server[i], dtype=torch.long))
+            input = x.index_select(1, torch.tensor(data=self.edge_index_server[i], dtype=torch.long, device=self.device))
             layer1_outputs.append(self.Tanh(self.layer1_list[i](self.bn_list[i](input))))
 
         layer2_outputs = []
@@ -92,8 +102,8 @@ class DQN(nn.Module):
         for i in range(self.num_server * self.num_server):
             active_index = i // self.num_server
             stand_by_index = i % self.num_server
-            active_action = layer2_outputs[active_index].index_select(1, torch.tensor(data=[0], dtype=torch.long))
-            standby_action = layer2_outputs[stand_by_index].index_select(1, torch.tensor(data=[1], dtype=torch.long))
+            active_action = layer2_outputs[active_index].index_select(1, torch.tensor(data=[0], dtype=torch.long, device=self.device))
+            standby_action = layer2_outputs[stand_by_index].index_select(1, torch.tensor(data=[1], dtype=torch.long, device=self.device))
             input = torch.cat([active_action, standby_action], 1)
             layer3_outputs.append(self.Tanh(self.layer3_list[i](input)))
 
@@ -126,7 +136,7 @@ class DQNDecisionMaker(DecisionMaker):
             action_index = action
         else:
             state_a = np.array([state], copy=False)  # make state vector become a state matrix
-            state_v = torch.tensor(state_a, dtype=torch.float).to(self.device)  # transfer to tensor class
+            state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
             self.net.eval()
             q_vals_v = self.net(state_v)  # input to network, and get output
             _, act_v = torch.max(q_vals_v, dim=1)  # get the max index

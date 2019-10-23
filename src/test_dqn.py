@@ -15,7 +15,7 @@ EPSILON_DECAY = duration
 LEARNING_RATE = 1e-4
 SYNC_INTERVAL = 5
 ACTION_SPACE = generate_action_space(size=topo_size)
-DEVICE = torch.device("cpu")
+DEVICE = torch.device("cuda")
 
 # create model
 with open(file_name, 'rb') as f:
@@ -23,8 +23,8 @@ with open(file_name, 'rb') as f:
 STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 2 + 7
 
 # create decision maker(agent) & optimizer & environment
-net = DQN(model=model)
-tgt_net = DQN(model=model)
+net = DQN(model=model, device=DEVICE)
+tgt_net = DQN(model=model, device=DEVICE)
 buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
 
 decision_maker = DQNDecisionMaker(net=net, tgt_net = tgt_net, buffer = buffer, action_space = ACTION_SPACE, epsilon = EPSILON, epsilon_start = EPSILON_START, epsilon_final = EPSILON_FINAL, epsilon_decay = EPSILON_DECAY, device = DEVICE, gamma = GAMMA)

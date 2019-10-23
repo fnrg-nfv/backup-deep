@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="4de3b3ed-04df-4059-ac18-310f1a4512e1" name="txsun" url="http://10.141.209.48">
+        <fileTransfer host="10.141.209.48" port="19711" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+          <option name="port" value="19711" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

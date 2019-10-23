@@ -63,16 +63,15 @@ class ExperienceBuffer:
         return states, actions, rewards, next_states
 
 
-def fanin_init(size, fanin=None):
+def fanin_init(size, fanin: float, device: torch.device = torch.device("cpu")):
     """
     Init weights
     :param size: tensor size
     :param fanin:
     :return:
     """
-    fanin = fanin or size[0]
     v = 1. / np.sqrt(fanin)
-    return torch.Tensor(size).uniform_(-v, v)
+    return torch.Tensor(size).uniform_(-v, v).to(device)
 
 
 def printAction(action, window):
