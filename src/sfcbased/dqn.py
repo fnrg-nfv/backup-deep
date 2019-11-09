@@ -26,20 +26,20 @@ class DQN(nn.Module):
         # 1. add the server
         start = 0
         for i in range(self.num_server):
-            self.edge_index_server[i].extend([start, start + 1])
-            start += 2
+            self.edge_index_server[i].extend([start, start + 1, start + 2])
+            start += 3
 
         # 2. add the edge
-        start = self.num_server * 2
+        start = self.num_server * 3
         for edge in model.topo.edges:
             self.edge_num_server[edge[0]] += 1
             self.edge_num_server[edge[1]] += 1
-            self.edge_index_server[edge[0]].extend([start, start + 1])
-            self.edge_index_server[edge[1]].extend([start, start + 1])
-            start += 2
+            self.edge_index_server[edge[0]].extend([start, start + 1, start + 2])
+            self.edge_index_server[edge[1]].extend([start, start + 1, start + 2])
+            start += 3
 
         # 3. add the sfc's state
-        start = self.num_server * 2 + self.num_edge * 2
+        start = self.num_server * 3 + self.num_edge * 3
         for i in range(self.num_server):
             self.edge_index_server[i].extend(range(start, start + 7))
 
@@ -53,13 +53,13 @@ class DQN(nn.Module):
         # 1. first layer
         self.layer1_list = nn.ModuleList()
         for i in range(self.num_server):
-            layer1 = nn.Linear(len(self.edge_index_server[i]), 3)
+            layer1 = nn.Linear(len(self.edge_index_server[i]), 100)
             self.layer1_list.append(layer1)
 
         # 2. second layer
         self.layer2_list = nn.ModuleList()
         for i in range(self.num_server):
-            layer2 = nn.Linear(3, 2)
+            layer2 = nn.Linear(100, 2)
             self.layer2_list.append(layer2)
 
         # 3. third layer
@@ -178,6 +178,7 @@ def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, device: tor
     actions_v = torch.tensor(actions, dtype=torch.long).to(device)
     rewards_v = torch.tensor(rewards, dtype=torch.float).to(device)
 
+    # action is a list with one dimension, we should use unsqueeze() to span it
     state_action_values = net(states_v).gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
     next_state_values = tgt_net(next_states_v).max(1)[0]
     next_state_values = next_state_values.detach()
@@ -215,11 +216,13 @@ class DQNEnvironment(Environment):
         # first part
         # 1. node state
         for node in model.topo.nodes(data=True):
+            state.append(node[1]['computing_resource'])
             state.append(node[1]['active'])
             state.append(node[1]['reserved'])
 
         # 2. edge state
         for edge in model.topo.edges(data=True):
+            state.append(edge[2]['bandwidth'])
             state.append(edge[2]['active'])
             state.append(edge[2]['reserved'])
 

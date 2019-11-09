@@ -6,7 +6,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/vnfbased" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Remote Python 3.6.8 (sftp://txsun@10.141.209.48:19711/remote-home/txsun/anaconda3/bin/python)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.5.2 (sftp://user@10.141.209.18:10011/usr/bin/python3)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">

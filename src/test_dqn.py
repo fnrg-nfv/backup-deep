@@ -3,16 +3,16 @@ import torch.optim as optim
 from generate_topo import *
 
 # parameters with rl
-GAMMA = 0.99
-BATCH_SIZE = 2000
+GAMMA = 0.9
+BATCH_SIZE = 500
 
 ACTION_SHAPE = 2
-REPLAY_SIZE = 5000
+REPLAY_SIZE = 500
 EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.02
 EPSILON_DECAY = duration
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-3
 SYNC_INTERVAL = 5
 ACTION_SPACE = generate_action_space(size=topo_size)
 DEVICE = torch.device("cuda")
@@ -20,7 +20,7 @@ DEVICE = torch.device("cuda")
 # create model
 with open(file_name, 'rb') as f:
     model = pickle.load(f)   # read file and build object
-STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 2 + 7
+STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 
 # create decision maker(agent) & optimizer & environment
 net = DQN(model=model, device=DEVICE)
