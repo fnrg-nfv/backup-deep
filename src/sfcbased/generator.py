@@ -39,7 +39,7 @@ def generate_topology(size: int = 100):
 
     # generate V
     for i in range(size):
-        computing_resource = random.randint(100000, 200000)
+        computing_resource = random.randint(20000, 60000)
         topo.add_node(i, computing_resource=computing_resource, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
 
     # generate E
@@ -47,11 +47,11 @@ def generate_topology(size: int = 100):
         for j in range(i + 1, size):
             # make sure the whole network is connected
             if j == i + 1:
-                bandwidth = random.randint(10000, 100000)
+                bandwidth = random.randint(400, 800)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
                 continue
             if random.randint(1, 5) == 1:
-                bandwidth = random.randint(10000, 100000)
+                bandwidth = random.randint(400, 800)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
     return topo
 

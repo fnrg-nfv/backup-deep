@@ -15,7 +15,7 @@ EPSILON_DECAY = duration
 LEARNING_RATE = 1e-3
 SYNC_INTERVAL = 5
 ACTION_SPACE = generate_action_space(size=topo_size)
-DEVICE = torch.device("cuda")
+DEVICE = torch.device("cpu")
 
 # create model
 with open(file_name, 'rb') as f:

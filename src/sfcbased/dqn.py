@@ -108,6 +108,8 @@ class DQN(nn.Module):
             layer3_outputs.append(self.Tanh(self.layer3_list[i](input)))
 
         output = torch.cat(layer3_outputs, 1)
+
+        print("output: ", output)
         return output
 
 
