@@ -9,108 +9,58 @@ class Space(Enum):
 
 
 class DQN(nn.Module):
-
-    def __init__(self, model: Model, device):
+    def __init__(self, state_len: int, action_len: int, device: torch.device):
         super(DQN, self).__init__()
-
+        self.action_len = action_len
         self.device = device
-
-        self.num_server = len(model.topo.nodes)
-        self.num_edge = len(model.topo.edges)
-
-        self.edge_num_server = [0 for _ in range(self.num_server)] # number of edges of each server
-        self.edge_index_server = [[] for _ in range(self.num_server)] # index of edges occupied by specific server
-
-        # compute the num of edges occupied by each server and the index of them, so that we can build the forward topology easily
-        # note: this part is strongly coupled with the get_start() function, please make them compatible to each other
-        # 1. add the server
-        start = 0
-        for i in range(self.num_server):
-            self.edge_index_server[i].extend([start, start + 1, start + 2])
-            start += 3
-
-        # 2. add the edge
-        start = self.num_server * 3
-        for edge in model.topo.edges:
-            self.edge_num_server[edge[0]] += 1
-            self.edge_num_server[edge[1]] += 1
-            self.edge_index_server[edge[0]].extend([start, start + 1, start + 2])
-            self.edge_index_server[edge[1]].extend([start, start + 1, start + 2])
-            start += 3
-
-        # 3. add the sfc's state
-        start = self.num_server * 3 + self.num_edge * 3
-        for i in range(self.num_server):
-            self.edge_index_server[i].extend(range(start, start + 7))
-
-        # create the layers
-        # bn
-        self.bn_list = nn.ModuleList()
-        for i in range(self.num_server):
-            layer_bn = nn.BatchNorm1d(len(self.edge_index_server[i]))
-            self.bn_list.append(layer_bn)
-
-        # 1. first layer
-        self.layer1_list = nn.ModuleList()
-        for i in range(self.num_server):
-            layer1 = nn.Linear(len(self.edge_index_server[i]), 100)
-            self.layer1_list.append(layer1)
-
-        # 2. second layer
-        self.layer2_list = nn.ModuleList()
-        for i in range(self.num_server):
-            layer2 = nn.Linear(100, 2)
-            self.layer2_list.append(layer2)
-
-        # 3. third layer
-        self.layer3_list = nn.ModuleList()
-        for i in range(self.num_server * self.num_server):
-            layer3 = nn.Linear(2, 1)
-            self.layer3_list.append(layer3)
-
+        self.state_len = state_len
+        self.LeakyReLU = nn.LeakyReLU()
+        self.ReLU = nn.ReLU()
         self.Tanh = nn.Tanh()
-        self.init_weights(3e2)
+        self.BNs = nn.ModuleList()
 
-    def init_weights(self, init_w):
-        for layer in self.bn_list:
-            layer.weight.data = fanin_init(layer.weight.data.size(), init_w, device=self.device)
-            layer.bias.data = fanin_init(layer.bias.data.size(), init_w, device=self.device)
-            layer.running_mean.data = fanin_init(layer.running_mean.data.size(), init_w, device=self.device)
-            layer.running_var.data = fanin_init(layer.running_var.data.size(), init_w, device=self.device)
-        for layer in self.layer1_list:
-            layer.weight.data = fanin_init(layer.weight.data.size(), init_w, device=self.device)
-            layer.bias.data = fanin_init(layer.bias.data.size(), init_w, device=self.device)
-        for layer in self.layer2_list:
-            layer.weight.data = fanin_init(layer.weight.data.size(), init_w, device=self.device)
-            layer.bias.data = fanin_init(layer.bias.data.size(), init_w, device=self.device)
-        for layer in self.layer3_list:
-            layer.weight.data = fanin_init(layer.weight.data.size(), init_w, device=self.device)
-            layer.bias.data = fanin_init(layer.bias.data.size(), init_w, device=self.device)
+        self.BNs.append(nn.BatchNorm1d(num_features=self.state_len))
+        self.fc1 = nn.Linear(in_features=self.state_len, out_features=20)
+        self.BNs.append(nn.BatchNorm1d(num_features=20))
+        self.fc2 = nn.Linear(in_features=20, out_features=20)
+        self.BNs.append(nn.BatchNorm1d(num_features=20))
+        self.fc3 = nn.Linear(in_features=20, out_features=self.action_len)
+
+        self.init_weights(3e9)
+
+    def init_weights(self, init_w: float):
+        for bn in self.BNs:
+            bn.weight.data = fanin_init(bn.weight.data.size(), init_w, device=self.device)
+            bn.bias.data = fanin_init(bn.bias.data.size(), init_w, device=self.device)
+            bn.running_mean.data = fanin_init(bn.running_mean.data.size(), init_w, device=self.device)
+            bn.running_var.data = fanin_init(bn.running_var.data.size(), init_w, device=self.device)
+
+        self.fc1.weight.data = fanin_init(self.fc1.weight.data.size(), init_w, device=self.device)
+        self.fc1.bias.data = fanin_init(self.fc1.bias.data.size(), init_w, device=self.device)
+
+        self.fc2.weight.data = fanin_init(self.fc2.weight.data.size(), init_w, device=self.device)
+        self.fc2.bias.data = fanin_init(self.fc2.bias.data.size(), init_w, device=self.device)
+
+        self.fc3.weight.data = fanin_init(self.fc3.weight.data.size(), init_w, device=self.device)
+        self.fc3.bias.data = fanin_init(self.fc3.bias.data.size(), init_w, device=self.device)
+
 
     def forward(self, x: torch.Tensor):
-        layer1_outputs = []
-        for i in range(self.num_server):
-            input = x.index_select(1, torch.tensor(data=self.edge_index_server[i], dtype=torch.long, device=self.device))
-            layer1_outputs.append(self.Tanh(self.layer1_list[i](self.bn_list[i](input))))
+        # x = self.BNs[0](x)
+        x = self.fc1(x)
 
-        layer2_outputs = []
-        for i in range(self.num_server):
-            input = layer1_outputs[i]
-            layer2_outputs.append(self.Tanh(self.layer2_list[i](input)))
+        x = self.LeakyReLU(x)
 
-        layer3_outputs = []
-        for i in range(self.num_server * self.num_server):
-            active_index = i // self.num_server
-            stand_by_index = i % self.num_server
-            active_action = layer2_outputs[active_index].index_select(1, torch.tensor(data=[0], dtype=torch.long, device=self.device))
-            standby_action = layer2_outputs[stand_by_index].index_select(1, torch.tensor(data=[1], dtype=torch.long, device=self.device))
-            input = torch.cat([active_action, standby_action], 1)
-            layer3_outputs.append(self.Tanh(self.layer3_list[i](input)))
+        # x = self.BNs[1](x)
+        x = self.fc2(x)
+        x = self.LeakyReLU(x)
 
-        output = torch.cat(layer3_outputs, 1)
+        # x = self.BNs[2](x)
+        x = self.fc3(x)
 
-        print("output: ", output)
-        return output
+        print("output: ", x)
+
+        return x
 
 
 class DQNDecisionMaker(DecisionMaker):
