@@ -1,6 +1,8 @@
 import torch.nn as nn
 from sfcbased.utils import *
 from sfcbased.model import *
+
+
 # import torchsnooper
 
 @unique
@@ -20,11 +22,11 @@ class DQN(nn.Module):
         self.BNs = nn.ModuleList()
 
         self.BNs.append(nn.BatchNorm1d(num_features=self.state_len))
-        self.fc1 = nn.Linear(in_features=self.state_len, out_features=20)
-        self.BNs.append(nn.BatchNorm1d(num_features=20))
-        self.fc2 = nn.Linear(in_features=20, out_features=20)
-        self.BNs.append(nn.BatchNorm1d(num_features=20))
-        self.fc3 = nn.Linear(in_features=20, out_features=self.action_len)
+        self.fc1 = nn.Linear(in_features=self.state_len, out_features=50)
+        self.BNs.append(nn.BatchNorm1d(num_features=50))
+        self.fc2 = nn.Linear(in_features=50, out_features=50)
+        self.BNs.append(nn.BatchNorm1d(num_features=50))
+        self.fc3 = nn.Linear(in_features=50, out_features=self.action_len)
 
         self.init_weights(3e9)
 
@@ -44,7 +46,6 @@ class DQN(nn.Module):
         self.fc3.weight.data = fanin_init(self.fc3.weight.data.size(), init_w, device=self.device)
         self.fc3.bias.data = fanin_init(self.fc3.bias.data.size(), init_w, device=self.device)
 
-
     def forward(self, x: torch.Tensor):
         # x = self.BNs[0](x)
         x = self.fc1(x)
@@ -58,7 +59,7 @@ class DQN(nn.Module):
         # x = self.BNs[2](x)
         x = self.fc3(x)
 
-        print("output: ", x)
+        # print("output: ", x)
 
         return x
 

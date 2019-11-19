@@ -5,7 +5,10 @@ import os
 from generate_topo import *
 
 # parameters with rl
-LEARNING_FROM_LAST = False
+SAMPLE_FILE = "model/sample"
+TARGET_FILE = "model/target"
+EXP_REPLAY_FILE = "model/replay.pkl"
+LEARNING_FROM_LAST = True if os.path.exists(TARGET_FILE) and os.path.exists(SAMPLE_FILE) and os.path.exists(EXP_REPLAY_FILE) else False
 GAMMA = 0.9
 BATCH_SIZE = 200
 
@@ -17,18 +20,15 @@ EPSILON_FINAL = 0.05
 EPSILON_DECAY = sfc_size
 LEARNING_RATE = 1e-3
 SYNC_INTERVAL = 5
-TRAIN_INTERVAL = 5
+TRAIN_INTERVAL = 100
 ACTION_SPACE = generate_action_space(size=topo_size)
 ACTION_LEN = len(ACTION_SPACE)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-SAMPLE_FILE = "model/sample"
-TARGET_FILE = "model/target"
-EXP_REPLAY_FILE = "model/replay.pkl"
 
 
 # create model
 with open(file_name, 'rb') as f:
-    model = pickle.load(f)   # read file and build object
+    model = pickle.load(f)  # read file and build object
 STATE_LEN = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 
 # create decision maker(agent) & optimizer & environment
@@ -45,7 +45,7 @@ else:
         target_param.data.copy_(param.data)
     buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
 
-decision_maker = DQNDecisionMaker(net=net, tgt_net = tgt_net, buffer = buffer, action_space = ACTION_SPACE, epsilon = EPSILON, epsilon_start = EPSILON_START, epsilon_final = EPSILON_FINAL, epsilon_decay = EPSILON_DECAY, device = DEVICE, gamma = GAMMA)
+decision_maker = DQNDecisionMaker(net=net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA)
 
 optimizer = optim.Adam(decision_maker.net.parameters(), lr=LEARNING_RATE)
 env = DQNEnvironment()
@@ -77,7 +77,7 @@ if __name__ == "__main__":
                 reward = env.get_reward(model, i, decision, test_env)
                 next_state = env.get_state(model, i)
 
-                exp =  Experience(state=state, action=action, reward=reward, new_state=next_state)
+                exp = Experience(state=state, action=action, reward=reward, new_state=next_state)
                 decision_maker.buffer.append(exp)
 
                 if len(decision_maker.buffer) < REPLAY_SIZE:
@@ -95,15 +95,14 @@ if __name__ == "__main__":
 
     torch.save(decision_maker.net, SAMPLE_FILE)
     torch.save(decision_maker.tgt_net, TARGET_FILE)
-    with open(EXP_REPLAY_FILE, 'wb') as f: # open file with write-mode
-        model_string = pickle.dump(decision_maker.buffer, f) # serialize and save object
-
+    with open(EXP_REPLAY_FILE, 'wb') as f:  # open file with write-mode
+        model_string = pickle.dump(decision_maker.buffer, f)  # serialize and save object
 
     Monitor.print_log()
     # model.print_start_and_down()
 
-    print(model.calculate_fail_rate())
-    print(model.calculate_accept_rate())
+    print("fail rate: ", model.calculate_fail_rate())
+    print("accept rate: ", model.calculate_accept_rate())
 
     time.sleep(10)
-    os.system("/usr/bin/python3 -u /home/user/projects/backup_deep/train_dqn.py")
+    os.system("python -u C:\\Users\\tristone\\PycharmProjects\\backup-deep\\src\\train_dqn.py")

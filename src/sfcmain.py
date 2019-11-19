@@ -19,10 +19,8 @@ for cur_time in tqdm(range(0, duration)):
 Monitor.print_log()
 
 # model.print_start_and_down()
-
-print(model.calculate_fail_rate())
-
-print(model.calculate_accept_rate())
+print("fail rate: ", model.calculate_fail_rate())
+print("accept rate: ", model.calculate_accept_rate())
 
 print("\nDone!")
 

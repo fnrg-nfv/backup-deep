@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 import csv
 import collections
 from ast import literal_eval
@@ -100,6 +101,33 @@ def readDataset(path):
 
 def formatnum(x, pos):
     return '$%.1f$x$10^{4}$' % (x / 10000)
+
+
+def plot_action_distribution(action_list: List, num_nodes: int):
+    """
+    Plot the distribution of actions
+    :param action_list: list of actions
+    :param number of nodes
+    :return: nothing, just plot
+    """
+    fig = plt.figure()
+    ax1 = fig.add_subplot(projection='3d')
+
+    _x = np.arange(num_nodes)
+    _y = np.arange(num_nodes)
+    _xx, _yy = np.meshgrid(_x, _y)
+    x, y = _xx.ravel(), _yy.ravel()
+
+    data = np.zeros(shape=(num_nodes*num_nodes))
+    bottom = np.zeros_like(data)
+    width = depth = 1
+    for item in action_list:
+        data[item[0]*num_nodes + item[1]] += 1
+
+    ax1.bar3d(x, y, bottom, width, depth, data, shade=True)
+    print("Action: ")
+    print(data)
+    plt.show()
 
 
 def plotActionTrace(action_trace):

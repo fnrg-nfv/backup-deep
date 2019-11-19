@@ -2,7 +2,7 @@ from sfcbased import *
 import pickle
 
 topo_size = 10 # topology size
-sfc_size = 10000 # number of SFCs
+sfc_size = 6000 # number of SFCs
 duration = 1000 # simulation time
 file_name = "model/model.pkl" # file name
 error_rate = 0.1

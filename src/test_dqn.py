@@ -1,15 +1,14 @@
 from tqdm import tqdm
+import time
+import os
 from generate_topo import *
-from train_dqn import REPLAY_SIZE, EPSILON, EPSILON_START, EPSILON_FINAL, EPSILON_DECAY, GAMMA, STATE_LEN, ACTION_LEN
+from train_dqn import REPLAY_SIZE, EPSILON, EPSILON_START, EPSILON_FINAL, EPSILON_DECAY, GAMMA, STATE_LEN, ACTION_LEN, ACTION_SPACE, TARGET_FILE
 
 # parameters with rl
-ACTION_SHAPE = 2
-ACTION_SPACE = generate_action_space(size=topo_size)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-SAMPLE_FILE = "model/sample"
-TARGET_FILE = "model/target"
-EXP_REPLAY_FILE = "model/replay.pkl"
 
+# for debuging
+action_list = []
 
 # create model
 with open(file_name, 'rb') as f:
@@ -22,7 +21,7 @@ net = DQN(state_len=STATE_LEN, action_len=ACTION_LEN, device=DEVICE)
 tgt_net = torch.load(TARGET_FILE)
 buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
 
-decision_maker = DQNDecisionMaker(net=net, tgt_net = tgt_net, buffer = buffer, action_space = ACTION_SPACE, epsilon = EPSILON, epsilon_start = EPSILON_START, epsilon_final = EPSILON_FINAL, epsilon_decay = EPSILON_DECAY, device = DEVICE, gamma = GAMMA)
+decision_maker = DQNDecisionMaker(net=tgt_net, tgt_net = tgt_net, buffer = buffer, action_space = ACTION_SPACE, epsilon = EPSILON, epsilon_start = EPSILON_START, epsilon_final = EPSILON_FINAL, epsilon_decay = EPSILON_DECAY, device = DEVICE, gamma = GAMMA)
 
 env = DQNEnvironment()
 
@@ -48,11 +47,16 @@ if __name__ == "__main__":
             if cur_time <= model.sfc_list[i].time < cur_time + 1:
                 idx += 1
                 state = env.get_state(model, i)
-                _ = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
+                decision = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
+                action = DQNAction(decision.active_server, decision.standby_server).get_action()
+                action_list.append(action)
 
     Monitor.print_log()
     # model.print_start_and_down()
+    plot_action_distribution(action_list, num_nodes=topo_size)
 
-    print(model.calculate_fail_rate())
-    print(model.calculate_accept_rate())
+    print("fail rate: ", model.calculate_fail_rate())
+    print("accept rate: ", model.calculate_accept_rate())
 
+    time.sleep(10)
+    os.system("python -u C:\\Users\\tristone\\PycharmProjects\\backup-deep\\src\\test_dqn.py")
