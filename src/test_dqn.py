@@ -1,5 +1,4 @@
 from tqdm import tqdm
-import time
 import os
 from generate_topo import *
 from train_dqn import REPLAY_SIZE, EPSILON, EPSILON_START, EPSILON_FINAL, EPSILON_DECAY, GAMMA, STATE_LEN, ACTION_LEN, ACTION_SPACE, TARGET_FILE
@@ -58,5 +57,4 @@ if __name__ == "__main__":
     print("fail rate: ", model.calculate_fail_rate())
     print("accept rate: ", model.calculate_accept_rate())
 
-    time.sleep(10)
     os.system("python -u C:\\Users\\tristone\\PycharmProjects\\backup-deep\\src\\test_dqn.py")

@@ -1,26 +1,25 @@
 from tqdm import tqdm
 import torch.optim as optim
-import time
 import os
 from generate_topo import *
 
 # parameters with rl
-SAMPLE_FILE = "model/sample"
-TARGET_FILE = "model/target"
-EXP_REPLAY_FILE = "model/replay.pkl"
+SAMPLE_FILE = "model\\sample"
+TARGET_FILE = "model\\target"
+EXP_REPLAY_FILE = "model\\replay.pkl"
 LEARNING_FROM_LAST = True if os.path.exists(TARGET_FILE) and os.path.exists(SAMPLE_FILE) and os.path.exists(EXP_REPLAY_FILE) else False
-GAMMA = 0.9
+GAMMA = 0
 BATCH_SIZE = 200
 
 ACTION_SHAPE = 2
-REPLAY_SIZE = 1000
+REPLAY_SIZE = 3000
 EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.05
-EPSILON_DECAY = sfc_size
+EPSILON_DECAY = 1000
 LEARNING_RATE = 1e-3
 SYNC_INTERVAL = 5
-TRAIN_INTERVAL = 100
+TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
 ACTION_LEN = len(ACTION_SPACE)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
@@ -104,5 +103,4 @@ if __name__ == "__main__":
     print("fail rate: ", model.calculate_fail_rate())
     print("accept rate: ", model.calculate_accept_rate())
 
-    time.sleep(10)
     os.system("python -u C:\\Users\\tristone\\PycharmProjects\\backup-deep\\src\\train_dqn.py")

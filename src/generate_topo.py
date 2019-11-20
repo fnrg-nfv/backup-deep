@@ -1,15 +1,18 @@
 from sfcbased import *
 import pickle
+from pylab import show
 
 topo_size = 10 # topology size
 sfc_size = 6000 # number of SFCs
 duration = 1000 # simulation time
-file_name = "model/model.pkl" # file name
+file_name = "model\\model.pkl" # file name
 error_rate = 0.1
 test_env = TestEnv.FullyReservation
 
 if __name__ == "__main__":
     model = generate_model(topo_size=topo_size, sfc_size=sfc_size, duration=duration)
+    nx.draw(model.topo)
+    show()
     with open(file_name, 'wb') as f: # open file with write-mode
         model_string = pickle.dump(model, f) # serialize and save object
 

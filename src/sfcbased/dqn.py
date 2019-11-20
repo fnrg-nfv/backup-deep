@@ -22,11 +22,11 @@ class DQN(nn.Module):
         self.BNs = nn.ModuleList()
 
         self.BNs.append(nn.BatchNorm1d(num_features=self.state_len))
-        self.fc1 = nn.Linear(in_features=self.state_len, out_features=50)
-        self.BNs.append(nn.BatchNorm1d(num_features=50))
-        self.fc2 = nn.Linear(in_features=50, out_features=50)
-        self.BNs.append(nn.BatchNorm1d(num_features=50))
-        self.fc3 = nn.Linear(in_features=50, out_features=self.action_len)
+        self.fc1 = nn.Linear(in_features=self.state_len, out_features=30)
+        self.BNs.append(nn.BatchNorm1d(num_features=30))
+        self.fc2 = nn.Linear(in_features=30, out_features=30)
+        self.BNs.append(nn.BatchNorm1d(num_features=30))
+        self.fc3 = nn.Linear(in_features=30, out_features=self.action_len)
 
         self.init_weights(3e9)
 
@@ -49,7 +49,6 @@ class DQN(nn.Module):
     def forward(self, x: torch.Tensor):
         # x = self.BNs[0](x)
         x = self.fc1(x)
-
         x = self.LeakyReLU(x)
 
         # x = self.BNs[1](x)
@@ -60,7 +59,6 @@ class DQN(nn.Module):
         x = self.fc3(x)
 
         # print("output: ", x)
-
         return x
 
 
@@ -147,7 +145,7 @@ class DQNEnvironment(Environment):
 
     def get_reward(self, model: Model, sfc_index: int, decision: Decision, test_env: TestEnv):
         if model.sfc_list[sfc_index].state == State.Failed:
-            return 0
+            return -3
         if model.sfc_list[sfc_index].state == State.Normal:
             return 1
 
@@ -179,8 +177,8 @@ class DQNEnvironment(Environment):
             state.append(edge[2]['active'])
             state.append(edge[2]['reserved'])
 
-        # second part
-        # current sfc hasn't been deployed
+        #second part
+        #current sfc hasn't been deployed
         if sfc_index == len(model.sfc_list) - 1 or model.sfc_list[sfc_index].state == State.Undeployed:
             sfc = model.sfc_list[sfc_index]
             state.append(sfc.computing_resource)
@@ -191,7 +189,7 @@ class DQNEnvironment(Environment):
             state.append(sfc.s)
             state.append(sfc.d)
 
-        # current sfc has been deployed
+        #current sfc has been deployed
         elif model.sfc_list[sfc_index].state == State.Normal or model.sfc_list[sfc_index].state == State.Failed:
             sfc = model.sfc_list[sfc_index + 1]
             state.append(sfc.computing_resource)
