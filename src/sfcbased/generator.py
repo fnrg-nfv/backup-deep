@@ -85,12 +85,12 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
 
     # generate each sfc
     for i in range(len(timeslot_list)):
-        computing_resource = random.randint(3750, 7500)
-        tp = random.randint(32, 128)
-        latency = random.randint(10, 30)
+        computing_resource = 5000 # random.randint(3750, 7500)
+        tp = 70 #random.randint(32, 128)
+        latency = 20 #random.randint(10, 30)
         update_tp = tp
-        process_latency = random.uniform(0.863, 1.725)
-        TTL = random.randint(5, 10)  # sfc's time to live
+        process_latency = 1.2#random.uniform(0.863, 1.725)
+        TTL = 7#random.randint(5, 10)  # sfc's time to live
         s = random.randint(1, nodes_len - 1)
         d = random.randint(1, nodes_len - 1)
         sfc_list.append(SFC(computing_resource, tp, latency, update_tp, process_latency, s, d, timeslot_list[i], TTL))

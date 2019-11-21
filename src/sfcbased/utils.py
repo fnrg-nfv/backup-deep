@@ -118,8 +118,6 @@ def plot_action_distribution(action_list: List, num_nodes: int):
         data[item[0]*num_nodes + item[1]] += 1
 
     ax1.bar3d(x, y, bottom, width, depth, data, shade=True)
-    print("Action: ")
-    print(data)
     plt.show()
 
 
