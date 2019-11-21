@@ -7,7 +7,7 @@ from generate_topo import *
 SAMPLE_FILE = "model\\sample"
 TARGET_FILE = "model\\target"
 EXP_REPLAY_FILE = "model\\replay.pkl"
-GAMMA = 0.5
+GAMMA = 0.95
 BATCH_SIZE = 200
 
 ACTION_SHAPE = 2
@@ -16,13 +16,13 @@ EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.05
 EPSILON_DECAY = 50
-LEARNING_RATE = 1e-7
+LEARNING_RATE = 1e-5
 SYNC_INTERVAL = 5
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
 ACTION_LEN = len(ACTION_SPACE)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-ITERATIONS = 100\
+ITERATIONS = 100
 
 with open(file_name, 'rb') as f:
     topo = pickle.load(f)  # read file and build object
