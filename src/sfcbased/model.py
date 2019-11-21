@@ -716,6 +716,7 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
         :return: decision
         """
         decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
+        print(len(decisions))
         if len(decisions) == 0:
             decision = Decision()
             decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]

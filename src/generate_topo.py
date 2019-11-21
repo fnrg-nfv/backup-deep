@@ -8,7 +8,8 @@ duration = 500 # simulation time
 process_capacity = 5 # each time only can process 10 sfcs
 file_name = "model\\topo.pkl" # file name
 error_rate = 0.1
-test_env = TestEnv.Aggressive
+jitter = False
+test_env = TestEnv.FullyReservation
 
 if __name__ == "__main__":
     topo = generate_topology(size=topo_size)

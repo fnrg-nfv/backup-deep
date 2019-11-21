@@ -12,7 +12,7 @@ action_list = []
 # create model
 with open(file_name, 'rb') as f:
     topo = pickle.load(f)   # read file and build object
-sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration)
+sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
 model = Model(topo=topo, sfc_list=sfc_list)
 STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 

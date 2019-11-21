@@ -169,10 +169,10 @@ class DQNEnvironment(Environment):
         for node in model.topo.nodes(data=True):
             state.append(node[1]['computing_resource'] / max_v)
             state.append(node[1]['active'] / max_v)
-            # if node[1]['reserved'] == float('-inf'):
-            #     state.append(0)
-            # else:
-            #     state.append(node[1]['reserved'] / max_v)
+            if node[1]['reserved'] == float('-inf'):
+                state.append(0)
+            else:
+                state.append(node[1]['reserved'] / max_v)
 
         # 2. edge state
         max_e = 0
@@ -182,18 +182,18 @@ class DQNEnvironment(Environment):
         for edge in model.topo.edges(data=True):
             state.append(edge[2]['bandwidth'] / max_e)
             state.append(edge[2]['active'] / max_e)
-            # if edge[2]['reserved'] == float('-inf'):
-            #     state.append(0)
-            # else:
-            #     state.append(edge[2]['reserved'] / max_e)
+            if edge[2]['reserved'] == float('-inf'):
+                state.append(0)
+            else:
+                state.append(edge[2]['reserved'] / max_e)
 
         # the sfcs located in this time slot state
         sfc = model.sfc_list[sfc_index] if sfc_index < len(model.sfc_list) else model.sfc_list[sfc_index - 1]
         state.append(sfc.computing_resource / max_v)
         state.append(sfc.tp / max_e)
-        # state.append(sfc.latency)
+        state.append(sfc.latency)
         state.append(sfc.update_tp / max_e)
-        # state.append(sfc.process_latency)
+        state.append(sfc.process_latency)
         state.append(sfc.s)
         state.append(sfc.d)
 

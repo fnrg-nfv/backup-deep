@@ -39,7 +39,7 @@ def generate_topology(size: int = 100):
 
     # generate V
     for i in range(size):
-        computing_resource = random.randint(10000, 20000)
+        computing_resource = random.randint(20000, 40000)
         topo.add_node(i, computing_resource=computing_resource, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
 
     # generate E
@@ -47,20 +47,19 @@ def generate_topology(size: int = 100):
         for j in range(i + 1, size):
             # make sure the whole network is connected
             if j == i + 1:
-                bandwidth = random.randint(400, 800)
+                bandwidth = random.randint(100, 200)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
                 continue
             if random.randint(1, 15) == 1:
-                bandwidth = random.randint(400, 800)
+                bandwidth = random.randint(100, 200)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
     return topo
 
 
-def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, duration: int = 100):
+def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, duration: int = 100, jitter: bool = True):
     """
     Generate specified number SFCs
     :param topo: network topology(used to determine the start server and the destination server of specified SFC)
-    :param process_capacity: process capacity
     :param size: the total number SFCs(not exactly)
     :param duration: arriving SFCs duration
     :return: SFC list
@@ -79,21 +78,45 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
     timeslot_list = []
     for time in range(duration):
         for i in range(sfc_duration[time]):
-            timeslot_list.append(random.uniform(time, time + 1))
+            # timeslot_list.append(random.uniform(time, time + 1))
+            timeslot_list.append(random.uniform(0, duration))
 
     timeslot_list.sort()
 
     # generate each sfc
-    for i in range(len(timeslot_list)):
-        computing_resource = 5000 # random.randint(3750, 7500)
-        tp = 70 #random.randint(32, 128)
-        latency = 20 #random.randint(10, 30)
-        update_tp = tp
-        process_latency = 1.2#random.uniform(0.863, 1.725)
-        TTL = 7#random.randint(5, 10)  # sfc's time to live
-        s = random.randint(1, nodes_len - 1)
-        d = random.randint(1, nodes_len - 1)
-        sfc_list.append(SFC(computing_resource, tp, latency, update_tp, process_latency, s, d, timeslot_list[i], TTL))
+    cs_low = 3750
+    cs_high = 7500
+    tp_low = 32
+    tp_high = 128
+    latency_low = 10
+    latency_high = 30
+    process_latency_low = 0.863
+    process_latency_high = 1.725
+    TTL_low = 5
+    TTL_high = 10
+
+    if jitter:
+        for i in range(len(timeslot_list)):
+            computing_resource = random.randint(cs_low, cs_high) # 5625
+            tp = random.randint(tp_low, tp_high) # 80
+            latency = random.randint(latency_low, latency_high) # 20
+            update_tp = tp
+            process_latency = random.uniform(process_latency_low, process_latency_high) # 1.294
+            TTL = random.randint(TTL_low, TTL_high)  # sfc's time to live
+            s = random.randint(1, nodes_len - 1)
+            d = random.randint(1, nodes_len - 1)
+            sfc_list.append(SFC(computing_resource, tp, latency, update_tp, process_latency, s, d, timeslot_list[i], TTL))
+    else:
+        for i in range(len(timeslot_list)):
+            computing_resource = (cs_low + cs_high) // 2 # 5625
+            tp = (tp_low + tp_high) // 2 # 80
+            latency = (latency_low + latency_high) / 2 # 20
+            update_tp = tp
+            process_latency = (process_latency_low + process_latency_high) / 2 # 1.294
+            TTL = random.randint(TTL_low, TTL_high)  # sfc's time to live
+            s = random.randint(1, nodes_len - 1)
+            d = random.randint(1, nodes_len - 1)
+            sfc_list.append(SFC(computing_resource, tp, latency, update_tp, process_latency, s, d, timeslot_list[i], TTL))
 
     return sfc_list
 

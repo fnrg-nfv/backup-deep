@@ -7,15 +7,15 @@ from generate_topo import *
 SAMPLE_FILE = "model\\sample"
 TARGET_FILE = "model\\target"
 EXP_REPLAY_FILE = "model\\replay.pkl"
-GAMMA = 0.95
+GAMMA = 0.5
 BATCH_SIZE = 200
 
 ACTION_SHAPE = 2
-REPLAY_SIZE = 1000
+REPLAY_SIZE = 2000
 EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.05
-EPSILON_DECAY = 50
+EPSILON_DECAY = 1
 LEARNING_RATE = 1e-5
 SYNC_INTERVAL = 5
 TRAIN_INTERVAL = 1
@@ -26,16 +26,15 @@ ITERATIONS = 100
 
 with open(file_name, 'rb') as f:
     topo = pickle.load(f)  # read file and build object
-STATE_LEN = (len(topo.nodes()) + len(topo.edges())) * 2 + 5
+STATE_LEN = (len(topo.nodes()) + len(topo.edges())) * 3 + 7
 
 if __name__ == "__main__":
     for it in range(ITERATIONS):
         # create model
         with open(file_name, 'rb') as f:
             topo = pickle.load(f)  # read file and build object
-        sfc_list = generate_sfc_list(topo, process_capacity, size=sfc_size, duration=duration)
+        sfc_list = generate_sfc_list(topo, process_capacity, size=sfc_size, duration=duration, jitter=jitter)
         model = Model(topo=topo, sfc_list=sfc_list)
-        STATE_LEN = (len(model.topo.nodes()) + len(model.topo.edges())) * 2 + 5
 
         LEARNING_FROM_LAST = True if os.path.exists(TARGET_FILE) and os.path.exists(SAMPLE_FILE) and os.path.exists(EXP_REPLAY_FILE) else False
 
@@ -44,6 +43,7 @@ if __name__ == "__main__":
         if LEARNING_FROM_LAST:
             net = torch.load(SAMPLE_FILE)
             tgt_net = torch.load(TARGET_FILE)
+            # buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
             with open(EXP_REPLAY_FILE, 'rb') as f:
                 buffer = pickle.load(f)  # read file and build object
         else:
