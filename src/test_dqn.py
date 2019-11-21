@@ -11,7 +11,9 @@ action_list = []
 
 # create model
 with open(file_name, 'rb') as f:
-    model = pickle.load(f)   # read file and build object
+    topo = pickle.load(f)   # read file and build object
+sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration)
+model = Model(topo=topo, sfc_list=sfc_list)
 STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 
 # create decision maker(agent) & optimizer & environment
@@ -45,16 +47,16 @@ if __name__ == "__main__":
             # for each sfc which locate in this time slot
             if cur_time <= model.sfc_list[i].time < cur_time + 1:
                 idx += 1
-                state = env.get_state(model, i)
+                state, _ = env.get_state(model=model, sfc_index=i)
                 decision = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
                 action = DQNAction(decision.active_server, decision.standby_server).get_action()
                 action_list.append(action)
 
-    Monitor.print_log()
+    # Monitor.print_log()
     # model.print_start_and_down()
     plot_action_distribution(action_list, num_nodes=topo_size)
 
     print("fail rate: ", model.calculate_fail_rate())
     print("accept rate: ", model.calculate_accept_rate())
 
-    os.system("python -u C:\\Users\\tristone\\PycharmProjects\\backup-deep\\src\\test_dqn.py")
+    os.system("python C:\\Users\\tristone\\PycharmProjects\\backup-deep\\src\\test_dqn.py")

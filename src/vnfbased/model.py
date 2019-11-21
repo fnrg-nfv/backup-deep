@@ -4,7 +4,7 @@ from enum import Enum, unique
 import torch.nn as nn
 from abc import ABC, abstractmethod
 import torch.nn.functional as F
-import random
+import test_random
 from vnfbased.utils import *
 
 
@@ -108,7 +108,7 @@ class Batch(object):
 
     def sample(self, sample_size):
         assert len(self.__dataset) >= sample_size
-        dataset = random.sample(self.__dataset, sample_size)
+        dataset = test_random.sample(self.__dataset, sample_size)
         prestate_batch = []
         action_batch = []
         reward_batch = []
@@ -795,7 +795,7 @@ class RandomDecisionMaker(DecisionMaker):
         if len(available_node_set) == 0:
             return False
         else:
-            return random.sample(available_node_set, 1)
+            return test_random.sample(available_node_set, 1)
 
     def select_path(self, paths: List[Path]):
         '''
@@ -806,7 +806,7 @@ class RandomDecisionMaker(DecisionMaker):
         if len(paths) == 0:
             return False
         else:
-            return random.sample(paths, 1)[0]
+            return test_random.sample(paths, 1)[0]
 
 
 # test
@@ -817,7 +817,7 @@ def main():
     #     print(path)
     # nx.draw(topo, with_labels=True)
     # plt.show()
-    print(random.sample([1], 1))
+    print(test_random.sample([1], 1))
 
 
 if __name__ == '__main__':

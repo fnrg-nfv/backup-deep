@@ -717,7 +717,10 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
         """
         decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
         if len(decisions) == 0:
-            return Decision()
+            decision = Decision()
+            decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+            decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+            return decision
         decision = self.select_decision_from_decisions(decisions)
         return decision
 

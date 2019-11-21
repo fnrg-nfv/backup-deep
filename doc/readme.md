@@ -7,6 +7,11 @@
 - SFC and its stand-by are coupled, they should be placed together; 
 - Consider the damage of the stand-by instance.
 
+## Some considerations
+
+- Self-transition caused by failed placement: introduce negative reward to punish this transition;
+- Discontinuous transition: 
+
 ## Resources
 
 - **Nodes**: Computing resource;

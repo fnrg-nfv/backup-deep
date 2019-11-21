@@ -1,4 +1,4 @@
-import random
+import test_random
 
 def uniform(s: int = 0, d: int = 100, n: int = 100):
     '''
@@ -10,7 +10,7 @@ def uniform(s: int = 0, d: int = 100, n: int = 100):
     '''
     sample_result = []
     for i in range(n):
-        sample_result.append(random.uniform(s, d))
+        sample_result.append(test_random.uniform(s, d))
     sample_result.sort()
     return sample_result
 

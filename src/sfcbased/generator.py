@@ -39,7 +39,7 @@ def generate_topology(size: int = 100):
 
     # generate V
     for i in range(size):
-        computing_resource = random.randint(20000, 60000)
+        computing_resource = random.randint(10000, 20000)
         topo.add_node(i, computing_resource=computing_resource, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
 
     # generate E
@@ -50,17 +50,18 @@ def generate_topology(size: int = 100):
                 bandwidth = random.randint(400, 800)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
                 continue
-            if random.randint(1, 5) == 1:
+            if random.randint(1, 15) == 1:
                 bandwidth = random.randint(400, 800)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
     return topo
 
 
-def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
+def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, duration: int = 100):
     """
     Generate specified number SFCs
     :param topo: network topology(used to determine the start server and the destination server of specified SFC)
-    :param size: the total number SFCs
+    :param process_capacity: process capacity
+    :param size: the total number SFCs(not exactly)
     :param duration: arriving SFCs duration
     :return: SFC list
     """
@@ -68,13 +69,22 @@ def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
     nodes_len = len(topo.nodes)
 
     # list of sample in increasing order
+    each = size // duration
+    min_each = min(each * 2, process_capacity)
+    sfc_duration = [0 for _ in range(duration)]
+    for time in range(duration):
+        randint = random.randint(0, min_each)
+        sfc_duration[time] = randint
+
     timeslot_list = []
-    for i in range(size):
-        timeslot_list.append(random.uniform(0, duration))
+    for time in range(duration):
+        for i in range(sfc_duration[time]):
+            timeslot_list.append(random.uniform(time, time + 1))
+
     timeslot_list.sort()
 
     # generate each sfc
-    for i in range(size):
+    for i in range(len(timeslot_list)):
         computing_resource = random.randint(3750, 7500)
         tp = random.randint(32, 128)
         latency = random.randint(10, 30)
@@ -88,7 +98,7 @@ def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
     return sfc_list
 
 
-def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 100):
+def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 100, process_capacity: int = 10):
     """
     Function used to generate specified number nodes in network topology and SFCs in SFC list
     :param topo_size: nodes number in network topology
@@ -97,7 +107,7 @@ def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 10
     :return: Model object
     """
     topo = generate_topology(size=topo_size)
-    sfc_list = generate_sfc_list(topo=topo, size=sfc_size, duration=duration)
+    sfc_list = generate_sfc_list(topo=topo, size=sfc_size, duration=duration, process_capacity=process_capacity)
     return Model(topo, sfc_list)
 
 

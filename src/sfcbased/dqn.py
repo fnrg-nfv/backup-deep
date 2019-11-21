@@ -22,11 +22,11 @@ class DQN(nn.Module):
         self.BNs = nn.ModuleList()
 
         self.BNs.append(nn.BatchNorm1d(num_features=self.state_len))
-        self.fc1 = nn.Linear(in_features=self.state_len, out_features=30)
-        self.BNs.append(nn.BatchNorm1d(num_features=30))
-        self.fc2 = nn.Linear(in_features=30, out_features=30)
-        self.BNs.append(nn.BatchNorm1d(num_features=30))
-        self.fc3 = nn.Linear(in_features=30, out_features=self.action_len)
+        self.fc1 = nn.Linear(in_features=self.state_len, out_features=50)
+        self.BNs.append(nn.BatchNorm1d(num_features=50))
+        self.fc2 = nn.Linear(in_features=50, out_features=50)
+        self.BNs.append(nn.BatchNorm1d(num_features=50))
+        self.fc3 = nn.Linear(in_features=50, out_features=self.action_len)
 
         self.init_weights(3e9)
 
@@ -57,7 +57,6 @@ class DQN(nn.Module):
 
         # x = self.BNs[2](x)
         x = self.fc3(x)
-
         # print("output: ", x)
         return x
 
@@ -119,7 +118,7 @@ class DQNAction(Action):
 
 
 def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, device: torch.device):
-    states, actions, rewards, next_states = batch
+    states, actions, rewards, dones, next_states = batch
 
     # transform each action to index(real action)
     actions = [DQNAction(action[0], action[1]).action2index(action_space) for action in actions]
@@ -128,10 +127,12 @@ def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, device: tor
     next_states_v = torch.tensor(next_states, dtype=torch.float).to(device)
     actions_v = torch.tensor(actions, dtype=torch.long).to(device)
     rewards_v = torch.tensor(rewards, dtype=torch.float).to(device)
+    done_mask = torch.tensor(dones, dtype=torch.bool).to(device)
 
     # action is a list with one dimension, we should use unsqueeze() to span it
     state_action_values = net(states_v).gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
     next_state_values = tgt_net(next_states_v).max(1)[0]
+    next_state_values[done_mask] = 0.0
     next_state_values = next_state_values.detach()
 
     expected_state_action_values = next_state_values * gamma + rewards_v
@@ -145,59 +146,78 @@ class DQNEnvironment(Environment):
 
     def get_reward(self, model: Model, sfc_index: int, decision: Decision, test_env: TestEnv):
         if model.sfc_list[sfc_index].state == State.Failed:
-            return -3
+            return -1
         if model.sfc_list[sfc_index].state == State.Normal:
             return 1
 
     def get_state(self, model: Model, sfc_index: int):
         """
         Get the state of current network.
-        Contains two parts:
-        1. information about topology;
-        2. information about sfc.
-        Mainly two situations:
-        1. current sfc hasn't been deployed, then use this sfc's information;
-        2. current sfc has been deployed(either success or failed); then use next sfc's information.
         :param model: model
-        :param sfc_index: sfc index
-        :return: state vector
+        :param sfc_indexs: sfc indexs
+        :param process_capacity: process capacity
+        :return: state vector, done
         """
         state = []
 
-        # first part
+        # first part: topo state
         # 1. node state
+        max_v = 0
         for node in model.topo.nodes(data=True):
-            state.append(node[1]['computing_resource'])
-            state.append(node[1]['active'])
-            state.append(node[1]['reserved'])
+            if node[1]['computing_resource'] > max_v:
+                max_v = node[1]['computing_resource']
+        for node in model.topo.nodes(data=True):
+            state.append(node[1]['computing_resource'] / max_v)
+            state.append(node[1]['active'] / max_v)
+            # if node[1]['reserved'] == float('-inf'):
+            #     state.append(0)
+            # else:
+            #     state.append(node[1]['reserved'] / max_v)
 
         # 2. edge state
+        max_e = 0
         for edge in model.topo.edges(data=True):
-            state.append(edge[2]['bandwidth'])
-            state.append(edge[2]['active'])
-            state.append(edge[2]['reserved'])
+            if edge[2]['bandwidth'] > max_e:
+                max_e = edge[2]['bandwidth']
+        for edge in model.topo.edges(data=True):
+            state.append(edge[2]['bandwidth'] / max_e)
+            state.append(edge[2]['active'] / max_e)
+            # if edge[2]['reserved'] == float('-inf'):
+            #     state.append(0)
+            # else:
+            #     state.append(edge[2]['reserved'] / max_e)
+
+        # the sfcs located in this time slot state
+        sfc = model.sfc_list[sfc_index] if sfc_index < len(model.sfc_list) else model.sfc_list[sfc_index - 1]
+        state.append(sfc.computing_resource / max_v)
+        state.append(sfc.tp / max_e)
+        # state.append(sfc.latency)
+        state.append(sfc.update_tp / max_e)
+        # state.append(sfc.process_latency)
+        state.append(sfc.s)
+        state.append(sfc.d)
+
+        return state, False
 
         #second part
         #current sfc hasn't been deployed
-        if sfc_index == len(model.sfc_list) - 1 or model.sfc_list[sfc_index].state == State.Undeployed:
-            sfc = model.sfc_list[sfc_index]
-            state.append(sfc.computing_resource)
-            state.append(sfc.tp)
-            state.append(sfc.latency)
-            state.append(sfc.update_tp)
-            state.append(sfc.process_latency)
-            state.append(sfc.s)
-            state.append(sfc.d)
-
-        #current sfc has been deployed
-        elif model.sfc_list[sfc_index].state == State.Normal or model.sfc_list[sfc_index].state == State.Failed:
-            sfc = model.sfc_list[sfc_index + 1]
-            state.append(sfc.computing_resource)
-            state.append(sfc.tp)
-            state.append(sfc.latency)
-            state.append(sfc.update_tp)
-            state.append(sfc.process_latency)
-            state.append(sfc.s)
-            state.append(sfc.d)
-
-        return state
+        # if sfc_index == len(model.sfc_list) - 1 or model.sfc_list[sfc_index].state == State.Undeployed:
+        #     sfc = model.sfc_list[sfc_index]
+        #     state.append(sfc.computing_resource)
+        #     state.append(sfc.tp)
+        #     state.append(sfc.latency)
+        #     state.append(sfc.update_tp)
+        #     state.append(sfc.process_latency)
+        #     state.append(sfc.s)
+        #     state.append(sfc.d)
+        #
+        # #current sfc has been deployed
+        # elif model.sfc_list[sfc_index].state == State.Normal or model.sfc_list[sfc_index].state == State.Failed:
+        #     sfc = model.sfc_list[sfc_index + 1]
+        #     state.append(sfc.computing_resource)
+        #     state.append(sfc.tp)
+        #     state.append(sfc.latency)
+        #     state.append(sfc.update_tp)
+        #     state.append(sfc.process_latency)
+        #     state.append(sfc.s)
+        #     state.append(sfc.d)

@@ -2,17 +2,19 @@ from sfcbased import *
 import pickle
 from pylab import show
 
-topo_size = 10 # topology size
+topo_size = 15 # topology size
 sfc_size = 6000 # number of SFCs
-duration = 1000 # simulation time
-file_name = "model\\model.pkl" # file name
+duration = 500 # simulation time
+process_capacity = 5 # each time only can process 10 sfcs
+file_name = "model\\topo.pkl" # file name
 error_rate = 0.1
-test_env = TestEnv.FullyReservation
+test_env = TestEnv.Aggressive
 
 if __name__ == "__main__":
-    model = generate_model(topo_size=topo_size, sfc_size=sfc_size, duration=duration)
-    nx.draw(model.topo)
+    topo = generate_topology(size=topo_size)
+    # model = generate_model(topo_size=topo_size, sfc_size=sfc_size, duration=duration, process_capacity=process_capacity)
+    nx.draw(topo)
     show()
     with open(file_name, 'wb') as f: # open file with write-mode
-        model_string = pickle.dump(model, f) # serialize and save object
+        model_string = pickle.dump(topo, f) # serialize and save object
 

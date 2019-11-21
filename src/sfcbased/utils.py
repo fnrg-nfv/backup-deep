@@ -13,14 +13,7 @@ class Action:
 
 
 class Environment:
-
-    @abstractmethod
-    def get_reward(self, model: Model, sfc_index: int, decision: Decision, test_env: TestEnv):
-        return 0
-
-    @abstractmethod
-    def get_state(self, model: Model, sfc_index: int):
-        return []
+    pass
 
 
 class NormalEnvironment(Environment):
@@ -31,7 +24,7 @@ class NormalEnvironment(Environment):
         return []
 
 
-Experience = collections.namedtuple('Experience', field_names=['state', 'action', 'reward', 'new_state'])
+Experience = collections.namedtuple('Experience', field_names=['state', 'action', 'reward', 'done', 'new_state'])
 
 
 class ExperienceBuffer:
@@ -60,8 +53,8 @@ class ExperienceBuffer:
         :return: batch: List
         """
         indices = np.random.choice(len(self.buffer), batch_size, replace=False)
-        states, actions, rewards, next_states = zip(*[self.buffer[idx] for idx in indices])
-        return states, actions, rewards, next_states
+        states, actions, rewards, dones, next_states = zip(*[self.buffer[idx] for idx in indices])
+        return states, actions, rewards, dones, next_states
 
 
 def fanin_init(size, fanin: float, device: torch.device = torch.device("cpu")):

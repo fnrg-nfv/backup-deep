@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import random
+import test_random
 import warnings
 import matplotlib.cbook
 
@@ -20,12 +20,12 @@ def generate_topology(size=100):
     topo = nx.Graph()
     # generate V
     for i in range(size):
-        topo.add_node(i, computing_resource=random.randint(4000, 8000))
+        topo.add_node(i, computing_resource=test_random.randint(4000, 8000))
     # generate E
     for i in range(size):
         for j in range(i + 1, size):
-            if random.randint(1, 5) == 1:
-                topo.add_edge(i, j, bandwidth=random.randint(1000, 10000), latency=random.uniform(2, 5))
+            if test_random.randint(1, 5) == 1:
+                topo.add_edge(i, j, bandwidth=test_random.randint(1000, 10000), latency=test_random.uniform(2, 5))
     return topo
 
 # random generate 100 service function chains
@@ -46,16 +46,16 @@ def generate_sfc_list(topo: nx.Graph, size: int = 100, duration: int = 100):
     timeshot_list = sampler.uniform(0, duration, size)
 
     for i in range(size):
-        n = random.randint(5, 10) # the number of VNF
-        TTL = random.randint(5, 10) # sfc's time to live
+        n = test_random.randint(5, 10) # the number of VNF
+        TTL = test_random.randint(5, 10) # sfc's time to live
         vnf_list = []
         for j in range(n):
             # TODO: the latency of VNF could be larger, and the computing_resource is very important
-            vnf_list.append(VNF(latency=random.uniform(0.045, 0.3), computing_resource=random.randint(500, 1000)))
-        s = random.randint(1, nodes_len - 1)
-        d = random.randint(1, nodes_len - 1)
+            vnf_list.append(VNF(latency=test_random.uniform(0.045, 0.3), computing_resource=test_random.randint(500, 1000)))
+        s = test_random.randint(1, nodes_len - 1)
+        d = test_random.randint(1, nodes_len - 1)
         # TODO: the throughput requirement is very important
-        sfc_list.append(SFC(vnf_list, latency=random.randint(10, 30), throughput=random.randint(32, 128), s=s, d=d, time=timeshot_list[i], TTL=TTL))
+        sfc_list.append(SFC(vnf_list, latency=test_random.randint(10, 30), throughput=test_random.randint(32, 128), s=s, d=d, time=timeshot_list[i], TTL=TTL))
     return sfc_list
 
 def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 100):
