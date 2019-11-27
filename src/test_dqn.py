@@ -37,7 +37,7 @@ if __name__ == "__main__":
     for cur_time in tqdm(range(0, duration)):
 
         # generate failed instances
-        failed_instances = generate_failed_instances_time_slot(model, cur_time, error_rate)
+        failed_instances = generate_failed_instances_time_slot(model, cur_time)
 
         # handle state transition
         state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)

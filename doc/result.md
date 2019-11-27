@@ -5,3 +5,4 @@
 # Result
 
 - `start` and `end` in `state` have no influence of final result, other states of a sfc has a little influence(about 5%)；
+

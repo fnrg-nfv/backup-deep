@@ -22,7 +22,7 @@ EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.05
 EPSILON_DECAY = 1
-LEARNING_RATE = 1e-5
+LEARNING_RATE = 1e-2
 SYNC_INTERVAL = 5
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
@@ -32,7 +32,7 @@ ITERATIONS = 100
 
 with open(file_name, 'rb') as f:
     topo = pickle.load(f)  # read file and build object
-STATE_LEN = (len(topo.nodes()) + len(topo.edges())) * 3 + 7
+STATE_LEN = len(topo.nodes()) * 3 + len(topo.edges()) * 4 + 7
 
 if __name__ == "__main__":
     for it in range(ITERATIONS):
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         for cur_time in tqdm(range(0, duration)):
 
             # generate failed instances
-            failed_instances = generate_failed_instances_time_slot(model, cur_time, error_rate)
+            failed_instances = generate_failed_instances_time_slot(model, cur_time)
 
             # handle state transition
             state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)

@@ -2,9 +2,6 @@ import torch.nn as nn
 from sfcbased.utils import *
 from sfcbased.model import *
 
-
-# import torchsnooper
-
 @unique
 class Space(Enum):
     Unlimit = 0
@@ -179,7 +176,9 @@ class DQNEnvironment(Environment):
         for edge in model.topo.edges(data=True):
             if edge[2]['bandwidth'] > max_e:
                 max_e = edge[2]['bandwidth']
+
         for edge in model.topo.edges(data=True):
+            state.append(edge[2]['latency'])
             state.append(edge[2]['bandwidth'] / max_e)
             state.append(edge[2]['active'] / max_e)
             if edge[2]['reserved'] == float('-inf'):
