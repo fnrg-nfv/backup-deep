@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import warnings
 import matplotlib.cbook
 import math
+import numpy as np
 from sfcbased.model import *
 
 warnings.filterwarnings("ignore", category=matplotlib.cbook.mplDeprecation)
@@ -40,7 +41,8 @@ def generate_topology(size: int = 100):
     # generate V
     for i in range(size):
         computing_resource = random.randint(20000, 40000)
-        topo.add_node(i, computing_resource=computing_resource, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
+        fail_rate = random.uniform(0.3, 0.7)
+        topo.add_node(i, computing_resource=computing_resource, fail_rate=fail_rate, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
 
     # generate E
     for i in range(size):
@@ -100,7 +102,7 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
             computing_resource = random.randint(cs_low, cs_high) # 5625
             tp = random.randint(tp_low, tp_high) # 80
             latency = random.randint(latency_low, latency_high) # 20
-            update_tp = tp
+            update_tp = 0.01 * computing_resource
             process_latency = random.uniform(process_latency_low, process_latency_high) # 1.294
             TTL = random.randint(TTL_low, TTL_high)  # sfc's time to live
             s = random.randint(1, nodes_len - 1)
@@ -134,7 +136,7 @@ def generate_model(topo_size: int = 100, sfc_size: int = 100, duration: int = 10
     return Model(topo, sfc_list)
 
 
-def generate_failed_instances_time_slot(model: Model, time: int, error_rate: float):
+def generate_failed_instances_time_slot(model: Model, time: int):
     """
     Random generate failed instances, for:
     1. either active or stand-by instance is running
@@ -148,21 +150,39 @@ def generate_failed_instances_time_slot(model: Model, time: int, error_rate: flo
     :param error_rate: error rate
     :return: list of instance
     """
-    assert error_rate <= 1
+    servers = []
+    nodes = model.topo.nodes(data=True)
 
-    # get all running instances
-    all_running_instances = []
+    for i in range(len(nodes)):
+        node = nodes[i]
+        if np.random.random() < node['fail_rate']:
+            servers.append(i)
+
+    instances = []
     for i in range(len(model.sfc_list)):
         cur_sfc = model.sfc_list[i]
-        if cur_sfc.state == State.Normal and cur_sfc.time + cur_sfc.TTL >= time:
-            all_running_instances.append(Instance(i, True))
-        if model.sfc_list[i].state == State.Backup and cur_sfc.time + cur_sfc.TTL >= time:
-            all_running_instances.append(Instance(i, False))
+        if cur_sfc.state == State.Normal and cur_sfc.time + cur_sfc.TTL >= time and cur_sfc.active_sfc.server in servers:
+            instances.append(Instance(i, True))
+        if cur_sfc.state == State.Backup and cur_sfc.time + cur_sfc.TTL >= time and cur_sfc.standby_sfc.server in servers:
+            instances.append(Instance(i, False))
+    return instances
 
-    # random select
-    sample_num = math.ceil(len(all_running_instances) * error_rate)
-    failed_instances = random.sample(all_running_instances, sample_num)
-    return failed_instances
+    # random fail
+    # assert error_rate <= 1
+    #
+    # # get all running instances
+    # all_running_instances = []
+    # for i in range(len(model.sfc_list)):
+    #     cur_sfc = model.sfc_list[i]
+    #     if cur_sfc.state == State.Normal and cur_sfc.time + cur_sfc.TTL >= time:
+    #         all_running_instances.append(Instance(i, True))
+    #     if model.sfc_list[i].state == State.Backup and cur_sfc.time + cur_sfc.TTL >= time:
+    #         all_running_instances.append(Instance(i, False))
+    #
+    # # random select
+    # sample_num = math.ceil(len(all_running_instances) * error_rate)
+    # failed_instances = random.sample(all_running_instances, sample_num)
+    # return failed_instances
 
 
 # test
