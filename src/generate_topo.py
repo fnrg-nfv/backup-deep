@@ -1,12 +1,15 @@
 from sfcbased import *
 import pickle
 from pylab import show
+import platform
+
+pf = platform.system()
 
 topo_size = 15 # topology size
 sfc_size = 6000 # number of SFCs
 duration = 500 # simulation time
 process_capacity = 5 # each time only can process 10 sfcs
-file_name = "model\\topo.pkl" # file name
+file_name = "model\\topo.pkl" if pf == "Windows" else "model/topo.pkl" # file name
 error_rate = 0.1
 jitter = False
 test_env = TestEnv.FullyReservation

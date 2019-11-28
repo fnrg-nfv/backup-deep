@@ -59,4 +59,7 @@ if __name__ == "__main__":
     print("fail rate: ", model.calculate_fail_rate())
     print("accept rate: ", model.calculate_accept_rate())
 
-    os.system("python C:\\Users\\tristone\\PycharmProjects\\backup-deep\\src\\test_dqn.py")
+    if pf == "Windows":
+        os.system("python C:\\Users\\tristone\\PycharmProjects\\backup-deep\\src\\test_dqn.py")
+    elif pf == "Linux":
+        os.system("python /root/PycharmProjects/backup-deep/src/test_dqn.py")

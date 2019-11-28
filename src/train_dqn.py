@@ -4,9 +4,15 @@ import os
 from generate_topo import *
 
 # parameters with rl
-SAMPLE_FILE = "model\\sample"
-TARGET_FILE = "model\\target"
-EXP_REPLAY_FILE = "model\\replay.pkl"
+if pf == "Windows":
+    SAMPLE_FILE = "model\\sample"
+    TARGET_FILE = "model\\target"
+    EXP_REPLAY_FILE = "model\\replay.pkl"
+elif pf == "Linux":
+    SAMPLE_FILE = "model/sample"
+    TARGET_FILE = "model/target"
+    EXP_REPLAY_FILE = "model/replay.pkl"
+
 GAMMA = 0.5
 BATCH_SIZE = 200
 
