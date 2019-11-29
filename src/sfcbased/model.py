@@ -723,6 +723,7 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
             decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
             return decision
         decision = self.select_decision_from_decisions(decisions)
+        print(decision.update_path)
         return decision
 
 
@@ -745,6 +746,64 @@ class RandomDecisionMaker(DecisionMaker):
         decision = Decision()
         decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+        return decision
+
+
+class ICCheuristic(DecisionMaker):
+    """
+    The class used to make greedy decision of ICC paper raised
+    """
+
+    def __init__(self):
+        super(ICCheuristic, self).__init__()
+
+    def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+        """
+        Used to narrow available decision set
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: cur processing sfc index
+        :return: decision sets
+        """
+        desision_set = []
+        for i in range(len(model.topo.nodes)):
+            if not self.verify_active(model, cur_sfc_index, i, test_env):
+                continue
+            if test_env == TestEnv.NoBackup:
+                desision_set.append(Decision(i, -1))
+                continue
+            for j in range(len(model.topo.nodes)):
+                if self.verify_standby(model, cur_sfc_index, i, j, test_env):
+                    desision_set.append(Decision(i, j))
+        return desision_set
+
+    def select_decision_from_decisions(self, decisions: List):
+        # decisions = decisions.sort()
+        decision = random.sample(decisions, 1)[0]
+        return decision
+
+    def generate_decision(self, model: Model, cur_sfc_index: int, test_env: TestEnv, state: List):  # todo
+        """
+        generate new decision, don't check if it can be deployed
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param test_env: test environment
+        :return: decision
+        """
+        decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
+        print("len of decisions:", len(decisions))
+        decision = Decision()
+        decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+        decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+        if len(decisions) == 0:
+            return decision
+        for i in range(0, len(decisions)):
+            decisions[i].active_path, decisions[i].standby_path, decisions[i].update_path = \
+                self.select_paths(model, cur_sfc_index, decisions[i].active_server, decisions[i].standby_server, test_env)
+        decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'], len(x.update_path)))
+        for i in range(0, len(decisions)):
+            if len(decisions[i].update_path) > 0:
+                return decisions[i]
         return decision
 
 
