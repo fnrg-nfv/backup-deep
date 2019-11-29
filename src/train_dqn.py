@@ -14,16 +14,16 @@ elif pf == "Linux":
     EXP_REPLAY_FILE = "model/replay.pkl"
 
 GAMMA = 0.5
-BATCH_SIZE = 200
+BATCH_SIZE = 16 # start with small（32）, then go to big
 
 ACTION_SHAPE = 2
-REPLAY_SIZE = 2000
+REPLAY_SIZE = 5000
 EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.05
-EPSILON_DECAY = 1
-LEARNING_RATE = 1e-2
-SYNC_INTERVAL = 5
+EPSILON_DECAY = 50
+LEARNING_RATE = 1e-5
+SYNC_INTERVAL = 1
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
 ACTION_LEN = len(ACTION_SPACE)
@@ -32,7 +32,7 @@ ITERATIONS = 100
 
 with open(file_name, 'rb') as f:
     topo = pickle.load(f)  # read file and build object
-STATE_LEN = len(topo.nodes()) * 3 + len(topo.edges()) * 4 + 7
+STATE_LEN = len(topo.nodes()) * 4 + len(topo.edges()) * 4 + 7
 
 if __name__ == "__main__":
     for it in range(ITERATIONS):

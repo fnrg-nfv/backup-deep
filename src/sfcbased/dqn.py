@@ -17,13 +17,16 @@ class DQN(nn.Module):
         self.ReLU = nn.ReLU()
         self.Tanh = nn.Tanh()
         self.BNs = nn.ModuleList()
+        self.num = 50
 
         self.BNs.append(nn.BatchNorm1d(num_features=self.state_len))
-        self.fc1 = nn.Linear(in_features=self.state_len, out_features=50)
-        self.BNs.append(nn.BatchNorm1d(num_features=50))
-        self.fc2 = nn.Linear(in_features=50, out_features=50)
-        self.BNs.append(nn.BatchNorm1d(num_features=50))
-        self.fc3 = nn.Linear(in_features=50, out_features=self.action_len)
+        self.fc1 = nn.Linear(in_features=self.state_len, out_features=self.num)
+        self.BNs.append(nn.BatchNorm1d(num_features=self.num))
+        self.fc2 = nn.Linear(in_features=self.num, out_features=self.num)
+        self.BNs.append(nn.BatchNorm1d(num_features=self.num))
+        self.fc3 = nn.Linear(in_features=self.num, out_features=self.num)
+        self.fc4 = nn.Linear(in_features=self.num, out_features=self.num)
+        self.fc5 = nn.Linear(in_features=self.num, out_features=self.action_len)
 
         self.init_weights(3e9)
 
@@ -54,7 +57,13 @@ class DQN(nn.Module):
 
         # x = self.BNs[2](x)
         x = self.fc3(x)
+        x = self.LeakyReLU(x)
         # print("output: ", x)
+
+        x = self.fc4(x)
+        x = self.LeakyReLU(x)
+
+        x = self.fc5(x)
         return x
 
 
@@ -143,9 +152,11 @@ class DQNEnvironment(Environment):
 
     def get_reward(self, model: Model, sfc_index: int, decision: Decision, test_env: TestEnv):
         if model.sfc_list[sfc_index].state == State.Failed:
-            return -1
+            reward = -1
         if model.sfc_list[sfc_index].state == State.Normal:
-            return 1
+            reward = 1
+        # reward -= model.topo.nodes(data=True)[decision.standby_server]["fail_rate"]
+        return reward
 
     def get_state(self, model: Model, sfc_index: int):
         """
@@ -164,6 +175,7 @@ class DQNEnvironment(Environment):
             if node[1]['computing_resource'] > max_v:
                 max_v = node[1]['computing_resource']
         for node in model.topo.nodes(data=True):
+            state.append(node[1]['fail_rate'])
             state.append(node[1]['computing_resource'] / max_v)
             state.append(node[1]['active'] / max_v)
             if node[1]['reserved'] == float('-inf'):

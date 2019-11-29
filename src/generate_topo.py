@@ -5,7 +5,7 @@ import platform
 
 pf = platform.system()
 
-topo_size = 10 # topology size
+topo_size = 30 # topology size
 sfc_size = 6000 # number of SFCs
 duration = 500 # simulation time
 process_capacity = 5 # each time only can process 10 sfcs
