@@ -41,7 +41,7 @@ def generate_topology(size: int = 100):
     # generate V
     for i in range(size):
         computing_resource = random.randint(20000, 40000)
-        fail_rate = random.uniform(0.3, 0.7)
+        fail_rate = random.uniform(0.0, 0.4)
         topo.add_node(i, computing_resource=computing_resource, fail_rate=fail_rate, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
 
     # generate E
