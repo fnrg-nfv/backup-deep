@@ -791,7 +791,6 @@ class ICCheuristic(DecisionMaker):
         :return: decision
         """
         decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
-        print("len of decisions:", len(decisions))
         decision = Decision()
         decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]

@@ -18,7 +18,6 @@ STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 
 # create decision maker(agent) & optimizer & environment
 # create net and target net
-net = DQN(state_len=STATE_LEN, action_len=ACTION_LEN, device=DEVICE)
 tgt_net = torch.load(TARGET_FILE)
 buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
 

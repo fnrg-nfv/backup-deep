@@ -2,14 +2,16 @@ import torch.nn as nn
 from sfcbased.utils import *
 from sfcbased.model import *
 
+
 @unique
 class Space(Enum):
     Unlimit = 0
 
 
 class DQN(nn.Module):
-    def __init__(self, state_len: int, action_len: int, device: torch.device):
+    def __init__(self, state_len: int, action_len: int, tgt: bool, device: torch.device):
         super(DQN, self).__init__()
+        self.tgt = tgt
         self.action_len = action_len
         self.device = device
         self.state_len = state_len
@@ -72,6 +74,26 @@ class DQNDecisionMaker(DecisionMaker):
     This class is denoted as a decision maker used reinforcement learning
     """
 
+    def narrow_action_index_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+        """
+        Used to narrow available decision set
+        :param test_env: test env
+        :param model: model
+        :param cur_sfc_index: cur processing sfc index
+        :return: action index sets
+        """
+        action_index_set = []
+        for i in range(len(model.topo.nodes)):
+            if not self.verify_active(model, cur_sfc_index, i, test_env):
+                continue
+            if test_env == TestEnv.NoBackup:
+                action_index_set.append(i)
+                continue
+            for j in range(len(model.topo.nodes)):
+                if self.verify_standby(model, cur_sfc_index, i, j, test_env):
+                    action_index_set.append(i * len(model.topo.nodes) + j)
+        return action_index_set
+
     def __init__(self, net: DQN, tgt_net: DQN, buffer: ExperienceBuffer, action_space: List, gamma: float, epsilon_start: float, epsilon: float, epsilon_final: float, epsilon_decay: float, device: torch.device = torch.device("cpu")):
         super().__init__()
         self.net = net
@@ -87,7 +109,18 @@ class DQNDecisionMaker(DecisionMaker):
         self.idx = 0
 
     def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
-        if np.random.random() < self.epsilon:
+        action_indexs = self.narrow_action_index_set(model, cur_sfc_index, test_env)
+        if len(action_indexs) != 0:
+            action_indexs = torch.tensor(action_indexs, device=self.device)
+        if self.net.tgt:
+            state_a = np.array([state], copy=False)  # make state vector become a state matrix
+            state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
+            self.net.eval()
+            q_vals_v = self.net(state_v)  # input to network, and get output
+            q_vals_v = torch.index_select(q_vals_v, dim=1, index=action_indexs) if len(action_indexs) != 0 else q_vals_v # select columns
+            _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
+            action_index = action_indexs[int(act_v.item())] if len(action_indexs) != 0 else act_v.item()
+        elif np.random.random() < self.epsilon:
             action = random.randint(0, len(self.action_space) - 1)
             action_index = action
         else:
@@ -95,8 +128,9 @@ class DQNDecisionMaker(DecisionMaker):
             state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
             self.net.eval()
             q_vals_v = self.net(state_v)  # input to network, and get output
+            q_vals_v = torch.index_select(q_vals_v, dim=1, index=action_indexs) if len(action_indexs) != 0 else q_vals_v # select columns
             _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
-            action_index = int(act_v.item())  # returns the value of this tensor as a standard Python number. This only works for tensors with one element.
+            action_index = action_indexs[int(act_v.item())] if len(action_indexs) != 0 else act_v.item()
         action = self.action_space[action_index]
         # print(action)
         decision = Decision()
@@ -152,10 +186,11 @@ class DQNEnvironment(Environment):
 
     def get_reward(self, model: Model, sfc_index: int, decision: Decision, test_env: TestEnv):
         if model.sfc_list[sfc_index].state == State.Failed:
-            reward = -1
+            return -1
         if model.sfc_list[sfc_index].state == State.Normal:
             reward = 1
         # reward -= model.topo.nodes(data=True)[decision.standby_server]["fail_rate"]
+        reward = reward - model.topo.nodes(data=True)[decision.standby_server]["fail_rate"]
         return reward
 
     def get_state(self, model: Model, sfc_index: int):
@@ -207,7 +242,6 @@ class DQNEnvironment(Environment):
         state.append(sfc.process_latency)
         state.append(sfc.s)
         state.append(sfc.d)
-
         return state, False
 
         #second part

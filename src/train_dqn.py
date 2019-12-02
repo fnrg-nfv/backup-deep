@@ -14,15 +14,15 @@ elif pf == "Linux":
     EXP_REPLAY_FILE = "model/replay.pkl"
 
 GAMMA = 0.5
-BATCH_SIZE = 16 # start with small（32）, then go to big
+BATCH_SIZE = 32 # start with small（32）, then go to big
 
 ACTION_SHAPE = 2
-REPLAY_SIZE = 5000
+REPLAY_SIZE = 100
 EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.05
-EPSILON_DECAY = 50
-LEARNING_RATE = 1e-5
+EPSILON_DECAY = 1
+LEARNING_RATE = 1e-3
 SYNC_INTERVAL = 1
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
@@ -53,8 +53,8 @@ if __name__ == "__main__":
             with open(EXP_REPLAY_FILE, 'rb') as f:
                 buffer = pickle.load(f)  # read file and build object
         else:
-            net = DQN(state_len=STATE_LEN, action_len=ACTION_LEN, device=DEVICE)
-            tgt_net = DQN(state_len=STATE_LEN, action_len=ACTION_LEN, device=DEVICE)
+            net = DQN(state_len=STATE_LEN, action_len=ACTION_LEN, device=DEVICE, tgt=False)
+            tgt_net = DQN(state_len=STATE_LEN, action_len=ACTION_LEN, device=DEVICE, tgt=True)
             for target_param, param in zip(tgt_net.parameters(), net.parameters()):
                 target_param.data.copy_(param.data)
             buffer = ExperienceBuffer(capacity=REPLAY_SIZE)

@@ -5,13 +5,13 @@ import platform
 
 pf = platform.system()
 
-topo_size = 30 # topology size
+topo_size = 25 # topology size
 sfc_size = 6000 # number of SFCs
 duration = 500 # simulation time
 process_capacity = 5 # each time only can process 10 sfcs
 file_name = "model\\topo.pkl" if pf == "Windows" else "model/topo.pkl" # file name
 jitter = True
-test_env = TestEnv.FullyReservation
+test_env = TestEnv.MaxReservation
 
 if __name__ == "__main__":
     topo = generate_topology(size=topo_size)
