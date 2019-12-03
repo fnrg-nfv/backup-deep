@@ -90,7 +90,7 @@ class DQNDecisionMaker(DecisionMaker):
                 action_index_set.append(i)
                 continue
             for j in range(len(model.topo.nodes)):
-                if self.verify_standby(model, cur_sfc_index, i, j, test_env):
+                if i != j and self.verify_standby(model, cur_sfc_index, i, j, test_env):
                     action_index_set.append(i * len(model.topo.nodes) + j)
         return action_index_set
 

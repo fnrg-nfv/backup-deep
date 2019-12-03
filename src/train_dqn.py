@@ -13,16 +13,16 @@ elif pf == "Linux":
     TARGET_FILE = "model/target"
     EXP_REPLAY_FILE = "model/replay.pkl"
 
-GAMMA = 0.5
+GAMMA = 0.95
 BATCH_SIZE = 32 # start with small（32）, then go to big
 
 ACTION_SHAPE = 2
 REPLAY_SIZE = 100
 EPSILON = 0.0
 EPSILON_START = 1.0
-EPSILON_FINAL = 0.05
+EPSILON_FINAL = 0.1
 EPSILON_DECAY = 1
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-6
 SYNC_INTERVAL = 1
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
@@ -75,8 +75,7 @@ if __name__ == "__main__":
         for cur_time in tqdm(range(0, duration)):
 
             # generate failed instances
-            # failed_instances = generate_failed_instances_time_slot(model, cur_time)
-            failed_instances = []
+            failed_instances = generate_failed_instances_time_slot(model, cur_time)
             # handle state transition
             state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 
@@ -116,5 +115,5 @@ if __name__ == "__main__":
         # model.print_start_and_down()
 
         print("fail rate: ", model.calculate_fail_rate())
-        # print("real fail rate: ", Monitor.calculate_real_fail_rate())
+        print("real fail rate: ", Monitor.calculate_real_fail_rate())
         print("accept rate: ", model.calculate_accept_rate())

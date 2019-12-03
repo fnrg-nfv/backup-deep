@@ -570,7 +570,6 @@ class DecisionMaker(BaseObject):
                 return False, decision
 
         # paths met or not
-
         paths = self.select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
         if not paths:
             return False, decision
@@ -818,7 +817,7 @@ class ICCheuristic(DecisionMaker):
         for i in range(0, len(decisions)):
             decisions[i].active_path, decisions[i].standby_path, decisions[i].update_path = \
                 self.select_paths(model, cur_sfc_index, decisions[i].active_server, decisions[i].standby_server, test_env)
-        decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'] - \
+        decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'] + \
                                                      model.topo.nodes[x.active_server]['active'], len(x.update_path)))
         for i in range(0, len(decisions)):
             if len(decisions[i].update_path) > 0:

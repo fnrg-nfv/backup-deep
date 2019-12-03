@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import warnings
 import matplotlib.cbook
-import math
 import numpy as np
 from sfcbased.model import *
 
@@ -53,7 +52,7 @@ def generate_topology(size: int = 100):
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
                 continue
             if random.randint(1, 15) == 1:
-                bandwidth = random.randint(100, 200)
+                bandwidth = random.randint(200, 400)
                 topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
     return topo
 

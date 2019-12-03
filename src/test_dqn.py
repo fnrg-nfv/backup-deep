@@ -36,10 +36,7 @@ if __name__ == "__main__":
     for cur_time in tqdm(range(0, duration)):
 
         # generate failed instances
-        # failed_instances = generate_failed_instances_time_slot(model, cur_time)
-
-        failed_instances = []
-
+        failed_instances = generate_failed_instances_time_slot(model, cur_time)
         # handle state transition
         state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 
@@ -58,7 +55,7 @@ if __name__ == "__main__":
     plot_action_distribution(action_list, num_nodes=topo_size)
 
     print("fail rate: ", model.calculate_fail_rate())
-    # print("real fail rate: ", Monitor.calculate_real_fail_rate())
+    print("real fail rate: ", Monitor.calculate_real_fail_rate())
     print("accept rate: ", model.calculate_accept_rate())
 
     if pf == "Windows":
