@@ -29,6 +29,7 @@ ACTION_SPACE = generate_action_space(size=topo_size)
 ACTION_LEN = len(ACTION_SPACE)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 ITERATIONS = 100
+DOUBLE = True
 
 with open(file_name, 'rb') as f:
     topo = pickle.load(f)  # read file and build object
@@ -74,8 +75,8 @@ if __name__ == "__main__":
         for cur_time in tqdm(range(0, duration)):
 
             # generate failed instances
-            failed_instances = generate_failed_instances_time_slot(model, cur_time)
-
+            # failed_instances = generate_failed_instances_time_slot(model, cur_time)
+            failed_instances = []
             # handle state transition
             state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 
@@ -102,7 +103,7 @@ if __name__ == "__main__":
                     if idx % TRAIN_INTERVAL == 0:
                         optimizer.zero_grad()
                         batch = decision_maker.buffer.sample(BATCH_SIZE)
-                        loss_t = calc_loss(batch, decision_maker.net, decision_maker.tgt_net, gamma=GAMMA, action_space=ACTION_SPACE, device=DEVICE)
+                        loss_t = calc_loss(batch, decision_maker.net, decision_maker.tgt_net, gamma=GAMMA, action_space=ACTION_SPACE, double=DOUBLE, device=DEVICE)
                         loss_t.backward()
                         optimizer.step()
 
@@ -115,4 +116,5 @@ if __name__ == "__main__":
         # model.print_start_and_down()
 
         print("fail rate: ", model.calculate_fail_rate())
+        # print("real fail rate: ", Monitor.calculate_real_fail_rate())
         print("accept rate: ", model.calculate_accept_rate())

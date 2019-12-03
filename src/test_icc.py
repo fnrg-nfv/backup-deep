@@ -14,7 +14,8 @@ decision_maker = ICCheuristic()
 env = NormalEnvironment()
 if __name__ == "__main__":
     for cur_time in tqdm(range(0, duration)):
-        failed_instances = generate_failed_instances_time_slot(model, cur_time)
+        # failed_instances = generate_failed_instances_time_slot(model, cur_time)
+        failed_instances = []
         state = env.get_state(model, 0)
         process_time_slot(model, decision_maker, cur_time, test_env, state, failed_instances)
 
@@ -22,6 +23,7 @@ if __name__ == "__main__":
 
 # model.print_start_and_down()
     print("\nfail rate: ", model.calculate_fail_rate())
+    # print("real fail rate: ", Monitor.calculate_real_fail_rate())
     print("accept rate: ", model.calculate_accept_rate())
 
     print("\nDone!")

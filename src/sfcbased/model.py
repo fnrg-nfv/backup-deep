@@ -161,6 +161,19 @@ class Monitor(BaseObject):
     def print_log(cls):
         for item in cls.action_list:
             print(item)
+    @classmethod
+    def calculate_real_fail_rate(cls):
+        fail_num = 0
+        success_num = 0
+        for item in cls.format_logs:
+            if len(item) == 5:
+                if item[4] == BrokenReason.StandbyStartFailed:
+                    fail_num += 1
+            if len(item) == 4:
+                if item[2] == State.Normal and item[3] == State.Backup:
+                    success_num += 1
+        print(success_num, fail_num)
+        return fail_num / (fail_num + success_num)
 
 
 class Instance(BaseObject):
@@ -328,12 +341,20 @@ class Model(BaseObject):
                     self.sfc_list[i].standby_sfc.starttime,
                     self.sfc_list[i].standby_sfc.downtime))
 
+    def calculate_real_fail_rate(self):
+        """
+        What is the real fail rate?
+        If the broken reason is StandbyStartFailed, then
+        :return: real fail rate
+        """
+
+
+
     def calculate_fail_rate(self):
         """
         Calculate fail rate
         :return: fail rate
         """
-
         real_not_service = 0
         should_not_service = 0
         for i in range(len(self.sfc_list)):
@@ -716,14 +737,12 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
         :return: decision
         """
         decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
-        print(len(decisions))
         if len(decisions) == 0:
             decision = Decision()
             decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
             decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
             return decision
         decision = self.select_decision_from_decisions(decisions)
-        print(decision.update_path)
         return decision
 
 

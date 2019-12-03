@@ -157,7 +157,7 @@ class DQNAction(Action):
         raise RuntimeError("The action space doesn't contain this action")
 
 
-def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, device: torch.device):
+def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, double: bool, device: torch.device):
     states, actions, rewards, dones, next_states = batch
 
     # transform each action to index(real action)
@@ -171,12 +171,16 @@ def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, device: tor
 
     # action is a list with one dimension, we should use unsqueeze() to span it
     state_action_values = net(states_v).gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
-    next_state_values = tgt_net(next_states_v).max(1)[0]
+
+    if double:
+        next_state_actions = net(next_states_v).max(1)[1]
+        next_state_values = tgt_net(next_states_v).gather(1, next_state_actions.unsqueeze(-1)).squeeze(-1)
+    else:
+        next_state_values = tgt_net(next_states_v).max(1)[0]
+
     next_state_values[done_mask] = 0.0
     next_state_values = next_state_values.detach()
-
     expected_state_action_values = next_state_values * gamma + rewards_v
-
     return nn.MSELoss()(state_action_values, expected_state_action_values)
 
 
@@ -190,7 +194,8 @@ class DQNEnvironment(Environment):
         if model.sfc_list[sfc_index].state == State.Normal:
             reward = 1
         # reward -= model.topo.nodes(data=True)[decision.standby_server]["fail_rate"]
-        reward = reward - model.topo.nodes(data=True)[decision.standby_server]["fail_rate"]
+        # reward = reward - model.topo.nodes(data=True)[decision.standby_server]["fail_rate"]
+        length = len(model.sfc_list[sfc_index].standby_sfc.path_c2d) + len(model.sfc_list[sfc_index].standby_sfc.path_s2c)
         return reward
 
     def get_state(self, model: Model, sfc_index: int):
