@@ -19,7 +19,7 @@ class DQN(nn.Module):
         self.ReLU = nn.ReLU()
         self.Tanh = nn.Tanh()
         self.BNs = nn.ModuleList()
-        self.num = 50
+        self.num = 200
 
         self.BNs.append(nn.BatchNorm1d(num_features=self.state_len))
         self.fc1 = nn.Linear(in_features=self.state_len, out_features=self.num)
@@ -53,14 +53,14 @@ class DQN(nn.Module):
         x = self.fc1(x)
         x = self.LeakyReLU(x)
 
-        # x = self.BNs[1](x)
+        # # x = self.BNs[1](x)
         x = self.fc2(x)
         x = self.LeakyReLU(x)
-
-        # x = self.BNs[2](x)
+        #
+        # # x = self.BNs[2](x)
         x = self.fc3(x)
         x = self.LeakyReLU(x)
-        # print("output: ", x)
+        # # print("output: ", x)
 
         x = self.fc4(x)
         x = self.LeakyReLU(x)
@@ -121,7 +121,7 @@ class DQNDecisionMaker(DecisionMaker):
             _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
             action_index = action_indexs[int(act_v.item())] if len(action_indexs) != 0 else act_v.item()
         elif np.random.random() < self.epsilon:
-            action = random.randint(0, len(self.action_space) - 1)
+            action = random.randint(0, len(action_indexs) - 1) if len(action_indexs) != 0 else random.randint(0, len(self.action_space) - 1)
             action_index = action
         else:
             state_a = np.array([state], copy=False)  # make state vector become a state matrix
@@ -240,13 +240,13 @@ class DQNEnvironment(Environment):
 
         # the sfcs located in this time slot state
         sfc = model.sfc_list[sfc_index] if sfc_index < len(model.sfc_list) else model.sfc_list[sfc_index - 1]
-        state.append(sfc.computing_resource / max_v)
-        state.append(sfc.tp / max_e)
-        state.append(sfc.latency)
-        state.append(sfc.update_tp / max_e)
-        state.append(sfc.process_latency)
-        state.append(sfc.s)
-        state.append(sfc.d)
+        # state.append(sfc.computing_resource / max_v)
+        # state.append(sfc.tp / max_e)
+        # state.append(sfc.latency)
+        # state.append(sfc.update_tp / max_e)
+        # state.append(sfc.process_latency)
+        # state.append(sfc.s)
+        # state.append(sfc.d)
         return state, False
 
         #second part

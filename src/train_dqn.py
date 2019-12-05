@@ -28,12 +28,12 @@ TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
 ACTION_LEN = len(ACTION_SPACE)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-ITERATIONS = 100
+ITERATIONS = 10000
 DOUBLE = True
 
 with open(file_name, 'rb') as f:
     topo = pickle.load(f)  # read file and build object
-STATE_LEN = len(topo.nodes()) * 4 + len(topo.edges()) * 4 + 7
+STATE_LEN = len(topo.nodes()) * 4 + len(topo.edges()) * 4 + 0
 
 if __name__ == "__main__":
     for it in range(ITERATIONS):
