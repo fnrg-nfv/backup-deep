@@ -28,7 +28,9 @@ class DQN(nn.Module):
         self.BNs.append(nn.BatchNorm1d(num_features=self.num))
         self.fc3 = nn.Linear(in_features=self.num, out_features=self.num)
         self.fc4 = nn.Linear(in_features=self.num, out_features=self.num)
-        self.fc5 = nn.Linear(in_features=self.num, out_features=self.action_len)
+        self.fc5 = nn.Linear(in_features=self.num, out_features=self.num)
+        self.fc6 = nn.Linear(in_features=self.num, out_features=self.num)
+        self.fc7 = nn.Linear(in_features=self.num, out_features=self.action_len)
 
         self.init_weights(3e9)
 
@@ -53,19 +55,25 @@ class DQN(nn.Module):
         x = self.fc1(x)
         x = self.LeakyReLU(x)
 
-        # # x = self.BNs[1](x)
-        x = self.fc2(x)
-        x = self.LeakyReLU(x)
+        # # # x = self.BNs[1](x)
+        # x = self.fc2(x)
+        # x = self.LeakyReLU(x)
+        # #
+        # # # x = self.BNs[2](x)
+        # x = self.fc3(x)
+        # x = self.LeakyReLU(x)
+        # # # print("output: ", x)
         #
-        # # x = self.BNs[2](x)
-        x = self.fc3(x)
-        x = self.LeakyReLU(x)
-        # # print("output: ", x)
+        # x = self.fc4(x)
+        # x = self.LeakyReLU(x)
+        #
+        # x = self.fc5(x)
+        # x = self.LeakyReLU(x)
 
-        x = self.fc4(x)
+        x = self.fc6(x)
         x = self.LeakyReLU(x)
 
-        x = self.fc5(x)
+        x = self.fc7(x)
         return x
 
 
@@ -121,8 +129,8 @@ class DQNDecisionMaker(DecisionMaker):
             _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
             action_index = action_indexs[int(act_v.item())] if len(action_indexs) != 0 else act_v.item()
         elif np.random.random() < self.epsilon:
-            action = random.randint(0, len(action_indexs) - 1) if len(action_indexs) != 0 else random.randint(0, len(self.action_space) - 1)
-            action_index = action
+            action = action_indexs[random.randint(0, len(action_indexs) - 1)] if len(action_indexs) != 0 else random.randint(0, len(self.action_space) - 1)
+            action_index =action
         else:
             state_a = np.array([state], copy=False)  # make state vector become a state matrix
             state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
@@ -192,11 +200,10 @@ class DQNEnvironment(Environment):
         if model.sfc_list[sfc_index].state == State.Failed:
             return -1
         if model.sfc_list[sfc_index].state == State.Normal:
-            reward = 1
+            return 1
+
         # reward -= model.topo.nodes(data=True)[decision.standby_server]["fail_rate"]
         # reward = reward - model.topo.nodes(data=True)[decision.standby_server]["fail_rate"]
-        length = len(model.sfc_list[sfc_index].standby_sfc.path_c2d) + len(model.sfc_list[sfc_index].standby_sfc.path_s2c)
-        return reward
 
     def get_state(self, model: Model, sfc_index: int):
         """
@@ -240,13 +247,13 @@ class DQNEnvironment(Environment):
 
         # the sfcs located in this time slot state
         sfc = model.sfc_list[sfc_index] if sfc_index < len(model.sfc_list) else model.sfc_list[sfc_index - 1]
-        # state.append(sfc.computing_resource / max_v)
-        # state.append(sfc.tp / max_e)
-        # state.append(sfc.latency)
-        # state.append(sfc.update_tp / max_e)
-        # state.append(sfc.process_latency)
-        # state.append(sfc.s)
-        # state.append(sfc.d)
+        state.append(sfc.computing_resource / max_v)
+        state.append(sfc.tp / max_e)
+        state.append(sfc.latency)
+        state.append(sfc.update_tp / max_e)
+        state.append(sfc.process_latency)
+        state.append(sfc.s)
+        state.append(sfc.d)
         return state, False
 
         #second part

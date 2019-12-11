@@ -1,10 +1,14 @@
 from tqdm import tqdm
 from generate_topo import *
 
-with open(file_name, 'rb') as f:
-    topo = pickle.load(f)   # read file and build object
-sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
-model = Model(topo, sfc_list)
+if load_model:
+    with open(model_file_name, 'rb') as f:
+        model = pickle.load(f)  # read file and build object
+else:
+    with open(topo_file_name, 'rb') as f:
+        topo = pickle.load(f)  # read file and build object
+        sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
+        model = Model(topo, sfc_list)
 
 decision_maker = RandomDecisionMaker()
 

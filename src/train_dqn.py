@@ -21,7 +21,7 @@ REPLAY_SIZE = 100
 EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.1
-EPSILON_DECAY = 1
+EPSILON_DECAY = 50
 LEARNING_RATE = 1e-6
 SYNC_INTERVAL = 1
 TRAIN_INTERVAL = 1
@@ -31,17 +31,26 @@ DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 ITERATIONS = 10000
 DOUBLE = True
 
-with open(file_name, 'rb') as f:
-    topo = pickle.load(f)  # read file and build object
-STATE_LEN = len(topo.nodes()) * 4 + len(topo.edges()) * 4 + 0
+if load_model:
+    with open(model_file_name, 'rb') as f:
+        model = pickle.load(f)  # read file and build object
+        STATE_LEN = len(model.topo.nodes()) * 4 + len(model.topo.edges()) * 4 + 7
+else:
+    with open(topo_file_name, 'rb') as f:
+        topo = pickle.load(f)  # read file and build object
+        STATE_LEN = len(topo.nodes()) * 4 + len(topo.edges()) * 4 + 7
 
 if __name__ == "__main__":
     for it in range(ITERATIONS):
         # create model
-        with open(file_name, 'rb') as f:
-            topo = pickle.load(f)  # read file and build object
-        sfc_list = generate_sfc_list(topo, process_capacity, size=sfc_size, duration=duration, jitter=jitter)
-        model = Model(topo=topo, sfc_list=sfc_list)
+        if load_model:
+            with open(model_file_name, 'rb') as f:
+                model = pickle.load(f)  # read file and build object
+        else:
+            with open(topo_file_name, 'rb') as f:
+                topo = pickle.load(f)  # read file and build object
+                sfc_list = generate_sfc_list(topo, process_capacity, size=sfc_size, duration=duration, jitter=jitter)
+                model = Model(topo=topo, sfc_list=sfc_list)
 
         LEARNING_FROM_LAST = True if os.path.exists(TARGET_FILE) and os.path.exists(SAMPLE_FILE) and os.path.exists(EXP_REPLAY_FILE) else False
 
@@ -76,6 +85,7 @@ if __name__ == "__main__":
 
             # generate failed instances
             failed_instances = generate_failed_instances_time_slot(model, cur_time)
+
             # handle state transition
             state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 

@@ -9,11 +9,14 @@ DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cp
 # for debuging
 action_list = []
 
-# create model
-with open(file_name, 'rb') as f:
-    topo = pickle.load(f)   # read file and build object
-sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
-model = Model(topo=topo, sfc_list=sfc_list)
+if load_model:
+    with open(model_file_name, 'rb') as f:
+        model = pickle.load(f)  # read file and build object
+else:
+    with open(topo_file_name, 'rb') as f:
+        topo = pickle.load(f)  # read file and build object
+        sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
+        model = Model(topo, sfc_list)
 STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 
 # create decision maker(agent) & optimizer & environment
@@ -37,6 +40,7 @@ if __name__ == "__main__":
 
         # generate failed instances
         failed_instances = generate_failed_instances_time_slot(model, cur_time)
+
         # handle state transition
         state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 

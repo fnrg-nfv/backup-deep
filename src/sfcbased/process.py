@@ -10,6 +10,7 @@ def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker,
     :param test_env: test environment
     :return: decision
     """
+
     if test_env == TestEnv.NoBackup:
         assert model.sfc_list[sfc_index].state == State.Undeployed
         flag, decision = decision_maker.make_decision(model, sfc_index, state, test_env)
@@ -63,6 +64,7 @@ def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: i
     :param test_env: test environment
     :return: nothing
     """
+
     for i in range(len(model.sfc_list)):
         # for each sfc which locate in this time slot
         if time <= model.sfc_list[i].time < time + 1:
@@ -92,7 +94,7 @@ def deploy_active(model: Model, sfc_index: int, test_env: TestEnv):
     for i in range(len(path_c2d) - 1):
         model.topo.edges[path_c2d[i], path_c2d[i + 1]]["active"] += model.sfc_list[sfc_index].tp
 
-    # No Backup
+    # update path
     if test_env != TestEnv.NoBackup:
         # occupy update bandwidth
         path = model.sfc_list[sfc_index].update_path

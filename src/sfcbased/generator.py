@@ -36,11 +36,20 @@ def generate_topology(size: int = 100):
     :return: topology
     """
     topo = nx.Graph()
+    cs_low = 20000
+    cs_high = 40000
+    bandwidth_low = 100
+    bandwidth_high = 300
+    fail_rate_low = 0.0
+    fail_rate_high = 0.4
+    inconnectivity = 20
+    latency_low = 2
+    latency_high = 5
 
     # generate V
     for i in range(size):
-        computing_resource = random.randint(20000, 40000)
-        fail_rate = random.uniform(0.0, 0.4)
+        computing_resource = random.randint(cs_low, cs_high)
+        fail_rate = random.uniform(fail_rate_low, fail_rate_high)
         topo.add_node(i, computing_resource=computing_resource, fail_rate=fail_rate, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
 
     # generate E
@@ -48,12 +57,12 @@ def generate_topology(size: int = 100):
         for j in range(i + 1, size):
             # make sure the whole network is connected
             if j == i + 1:
-                bandwidth = random.randint(100, 200)
-                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
+                bandwidth = random.randint(bandwidth_low, bandwidth_high)
+                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(latency_low, latency_high), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
                 continue
-            if random.randint(1, 15) == 1:
-                bandwidth = random.randint(200, 400)
-                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
+            if random.randint(1, inconnectivity) == 1:
+                bandwidth = random.randint(bandwidth_low, bandwidth_high)
+                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(latency_low, latency_high), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
     return topo
 
 
