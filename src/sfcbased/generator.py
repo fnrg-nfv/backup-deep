@@ -42,7 +42,7 @@ def generate_topology(size: int = 100):
     bandwidth_high = 300
     fail_rate_low = 0.0
     fail_rate_high = 0.4
-    inconnectivity = 20
+    inconnectivity = 15
     latency_low = 2
     latency_high = 5
 
@@ -79,7 +79,7 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
 
     # list of sample in increasing order
     each = size // duration
-    min_each = min(each * 2, process_capacity)
+    min_each = each * 2
     sfc_duration = [0 for _ in range(duration)]
     for time in range(duration):
         randint = random.randint(0, min_each)
@@ -94,12 +94,12 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
     timeslot_list.sort()
 
     # generate each sfc
-    cs_low = 3750
+    cs_low =  3750
     cs_high = 7500
-    tp_low = 32
-    tp_high = 128
-    latency_low = 10
-    latency_high = 30
+    tp_low = 32 # 32
+    tp_high = 128 # 128
+    latency_low = 10 # 10
+    latency_high = 30 # 30
     process_latency_low = 0.863
     process_latency_high = 1.725
     TTL_low = 5

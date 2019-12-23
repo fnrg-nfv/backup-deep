@@ -187,7 +187,7 @@ def remove_reservation(model: Model, sfc_index: int):
     # remove computing resource reservation
     model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["sbsfcs"].remove(sfc_index)
     if model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["max_sbsfc_index"] == sfc_index:
-        maxvalue = float("-inf")
+        maxvalue = 0
         maxindex = -1
         for index in model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["sbsfcs"]:
             if model.sfc_list[index].computing_resource > maxvalue:
@@ -202,7 +202,7 @@ def remove_reservation(model: Model, sfc_index: int):
     for i in range(len(path_s2c) - 1):
         model.topo.edges[path_s2c[i], path_s2c[i + 1]]["sbsfcs_s2c"].remove(sfc_index)
         if model.topo.edges[path_s2c[i], path_s2c[i + 1]]["max_sbsfc_index"] == sfc_index:
-            maxvalue = float("-inf")
+            maxvalue = 0
             maxindex = -1
             for index in model.topo.edges[path_s2c[i], path_s2c[i + 1]]["sbsfcs_s2c"]:
                 if model.sfc_list[index].tp > maxvalue:
@@ -217,7 +217,7 @@ def remove_reservation(model: Model, sfc_index: int):
     for i in range(len(path_c2d) - 1):
         model.topo.edges[path_c2d[i], path_c2d[i + 1]]["sbsfcs_c2d"].remove(sfc_index)
         if model.topo.edges[path_c2d[i], path_c2d[i + 1]]["max_sbsfc_index"] == sfc_index:
-            maxvalue = float("-inf")
+            maxvalue = 0
             maxindex = -1
             for index in model.topo.edges[path_c2d[i], path_c2d[i + 1]]["sbsfcs_s2c"]:
                 if model.sfc_list[index].tp > maxvalue:

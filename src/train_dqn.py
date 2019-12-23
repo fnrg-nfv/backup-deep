@@ -13,17 +13,18 @@ elif pf == "Linux":
     TARGET_FILE = "model/target"
     EXP_REPLAY_FILE = "model/replay.pkl"
 
-GAMMA = 0.95
+#todo adjust the batch size and replay size
+GAMMA = 0.5
 BATCH_SIZE = 32 # start with small（32）, then go to big
 
 ACTION_SHAPE = 2
-REPLAY_SIZE = 100
+REPLAY_SIZE = 10000
 EPSILON = 0.0
 EPSILON_START = 1.0
-EPSILON_FINAL = 0.1
+EPSILON_FINAL = 0.2
 EPSILON_DECAY = 50
-LEARNING_RATE = 1e-6
-SYNC_INTERVAL = 1
+LEARNING_RATE = 1e-5
+SYNC_INTERVAL = 500
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
 ACTION_LEN = len(ACTION_SPACE)
@@ -34,14 +35,15 @@ DOUBLE = True
 if load_model:
     with open(model_file_name, 'rb') as f:
         model = pickle.load(f)  # read file and build object
-        STATE_LEN = len(model.topo.nodes()) * 4 + len(model.topo.edges()) * 4 + 7
+        STATE_LEN = len(model.topo.nodes()) * 3 + len(model.topo.edges()) * 3 + 7
 else:
     with open(topo_file_name, 'rb') as f:
         topo = pickle.load(f)  # read file and build object
-        STATE_LEN = len(topo.nodes()) * 4 + len(topo.edges()) * 4 + 7
+        STATE_LEN = len(topo.nodes()) * 3 + len(topo.edges()) * 3 + 7
 
 if __name__ == "__main__":
     for it in range(ITERATIONS):
+
         # create model
         if load_model:
             with open(model_file_name, 'rb') as f:
@@ -72,6 +74,7 @@ if __name__ == "__main__":
         decision_maker = DQNDecisionMaker(net=net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA)
 
         optimizer = optim.Adam(decision_maker.net.parameters(), lr=LEARNING_RATE)
+        # optimizer = optim.SGD(decision_maker.net.parameters(), lr=LEARNING_RATE, momentum=0.9)
         env = DQNEnvironment()
 
         # related
@@ -84,8 +87,8 @@ if __name__ == "__main__":
         for cur_time in tqdm(range(0, duration)):
 
             # generate failed instances
-            failed_instances = generate_failed_instances_time_slot(model, cur_time)
-
+            # failed_instances = generate_failed_instances_time_slot(model, cur_time)
+            failed_instances = []
             # handle state transition
             state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 
@@ -114,6 +117,7 @@ if __name__ == "__main__":
                         batch = decision_maker.buffer.sample(BATCH_SIZE)
                         loss_t = calc_loss(batch, decision_maker.net, decision_maker.tgt_net, gamma=GAMMA, action_space=ACTION_SPACE, double=DOUBLE, device=DEVICE)
                         loss_t.backward()
+                        # print(decision_maker.net.fc7.weight.data)
                         optimizer.step()
 
         torch.save(decision_maker.net, SAMPLE_FILE)
@@ -123,7 +127,6 @@ if __name__ == "__main__":
 
         # Monitor.print_log()
         # model.print_start_and_down()
-
         print("fail rate: ", model.calculate_fail_rate())
         print("real fail rate: ", Monitor.calculate_real_fail_rate())
         print("accept rate: ", model.calculate_accept_rate())

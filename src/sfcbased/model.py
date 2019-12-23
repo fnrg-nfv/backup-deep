@@ -161,6 +161,7 @@ class Monitor(BaseObject):
     def print_log(cls):
         for item in cls.action_list:
             print(item)
+
     @classmethod
     def calculate_real_fail_rate(cls):
         fail_num = 0
@@ -365,6 +366,8 @@ class Model(BaseObject):
                 should_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime
                 real_not_service += cur_sfc.time + cur_sfc.TTL - cur_sfc.active_sfc.downtime - (
                         cur_sfc.standby_sfc.downtime - cur_sfc.standby_sfc.starttime)
+        if should_not_service == 0:
+            return 0
         return real_not_service / should_not_service
 
     def calculate_accept_rate(self):
@@ -520,7 +523,6 @@ class DecisionMaker(BaseObject):
                             cur_sfc_index].tp,
                         SFCType.Standby, test_env):
                         return True
-
         return False
 
     @abstractmethod
@@ -572,7 +574,9 @@ class DecisionMaker(BaseObject):
 
         # paths met or not
         paths = self.select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
-        if not paths:
+        flag = paths[0]
+        paths = paths[1:]
+        if not flag:
             return False, decision
 
         if test_env != TestEnv.NoBackup:
@@ -623,12 +627,15 @@ class DecisionMaker(BaseObject):
         :param active_index: active server index
         :param standby_index: stand-by server index
         :param test_env: test environment
-        :return: select path, else return false
+        :return: true or false, select path
         """
 
         # No backup condition
         if test_env == TestEnv.NoBackup:
+            flag = True
             active_paths = []
+            temp_active_s2c = next(nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index))
+            temp_active_c2d = next(nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d))
             for active_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
                 if self.is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active,
                                                test_env):
@@ -644,12 +651,16 @@ class DecisionMaker(BaseObject):
                             active_paths.append([active_s2c, active_c2d])
 
             if len(active_paths) == 0:
-                return False
+                active_paths.append([temp_active_s2c, temp_active_c2d])
+                flag = False
             active_path = self.select_path(active_paths, True)
-            return active_path
+            return flag, active_path
 
         # calculate paths for active instance
+        flag = True
         active_paths = []
+        temp_active_s2c = next(nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index))
+        temp_active_c2d = next(nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d))
         for active_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
             if self.is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
                 for active_c2d in nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
@@ -661,10 +672,15 @@ class DecisionMaker(BaseObject):
                         model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
                         active_paths.append([active_s2c, active_c2d])
         if len(active_paths) == 0:
-            return False
+            active_paths.append([temp_active_s2c, temp_active_c2d])
+            flag = False
+        active_path = self.select_path(active_paths, True)
 
         # calculate paths for stand-by instance
         standby_paths = []
+        temp_standby_s2c = next(nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index))
+        temp_standby_c2d = next(nx.all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d))
+
         for standby_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index):
             if self.is_path_throughput_met(model, standby_s2c, model.sfc_list[sfc_index].tp, SFCType.Standby, test_env):
                 for standby_c2d in nx.all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d):
@@ -678,22 +694,22 @@ class DecisionMaker(BaseObject):
                         SFCType.Standby, test_env):
                         standby_paths.append([standby_s2c, standby_c2d])
         if len(standby_paths) == 0:
-            return False
+            flag = False
+            standby_paths.append([temp_standby_s2c, temp_standby_c2d])
+        standby_path = self.select_path(standby_paths, True)
 
         # calculate paths for updating
         update_paths = []
+        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
         for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
-            return False
-
-        # select path
-        active_path = self.select_path(active_paths, True)
-        standby_path = self.select_path(standby_paths, True)
+            flag = False
+            update_paths.append(temp_update)
         update_path = self.select_path(update_paths, False)
 
-        return [active_path, standby_path, update_path]
+        return [flag, active_path, standby_path, update_path]
 
 
 class RandomDecisionMakerWithGuarantee(DecisionMaker):
@@ -703,6 +719,43 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
 
     def __init__(self):
         super(RandomDecisionMakerWithGuarantee, self).__init__()
+
+    def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int,
+                       test_env: TestEnv):
+        """
+        Verify if current stand-by sfc can be put on current server based on following three principles
+        1. if the remaining computing resource is still enough for this sfc
+        2. if available paths for updating still exist
+        Both these three principles are met can return true, else false
+        When the active instance is deployed, the topology will change and some constraints may not be met, but this is just a really small case so that we don't have to consider it.
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param active_server_index: active server index
+        :param cur_server_index: current server index
+        :return: true or false
+        """
+        assert test_env != TestEnv.NoBackup
+        # principle 1
+        if test_env == TestEnv.Aggressive:
+            if model.topo.nodes[cur_server_index]["computing_resource"] < model.sfc_list[
+                cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
+            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] < \
+                    model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.FullyReservation:
+            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] - \
+                    model.topo.nodes[cur_server_index]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+
+        # principle 2
+        for path in nx.all_shortest_paths(model.topo, active_server_index, cur_server_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
+                                           test_env):
+                return True
+        return False
 
     def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
         """
@@ -746,6 +799,64 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
         return decision
 
 
+class RandomDecisionMakerWithStrongGuarantee(DecisionMaker):
+    """
+    The class used to make random decision
+    """
+
+    def __init__(self):
+        super(RandomDecisionMakerWithStrongGuarantee, self).__init__()
+
+    def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+        """
+        Used to narrow available decision set
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: cur processing sfc index
+        :return: decision sets
+        """
+        desision_set = []
+        for i in range(len(model.topo.nodes)):
+            if not self.verify_active(model, cur_sfc_index, i, test_env):
+                continue
+            if test_env == TestEnv.NoBackup:
+                desision_set.append(Decision(i, -1))
+                continue
+            for j in range(len(model.topo.nodes)):
+                if self.verify_standby(model, cur_sfc_index, i, j, test_env) and i != j:
+                    desision_set.append(Decision(i, j))
+        return desision_set
+
+    def select_decision_from_decisions(self, decisions: List):
+        decision = random.sample(decisions, 1)[0]
+        return decision
+
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):  # todo
+        """
+        generate new decision, don't check if it can be deployed
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param test_env: test environment
+        :return: decision
+        """
+        decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
+
+        all_active = [0 for _ in range(len(model.topo.nodes))]
+        for d in decisions:
+            if all_active[d.active_server] == 0:
+                all_active[d.active_server] = 1
+        print("available active servers: ", sum(all_active))
+
+        if len(decisions) == 0:
+            decision = Decision()
+            decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+            decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+            return decision
+        decision = self.select_decision_from_decisions(decisions)
+        return decision
+
+
+
 class RandomDecisionMaker(DecisionMaker):
     """
     The class used to make random decision
@@ -776,6 +887,44 @@ class ICCheuristic(DecisionMaker):
     def __init__(self):
         super(ICCheuristic, self).__init__()
 
+    def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int,
+                       test_env: TestEnv):
+        """
+        Verify if current stand-by sfc can be put on current server based on following three principles
+        1. if the remaining computing resource is still enough for this sfc
+        2. if available paths for updating still exist
+        Both these three principles are met can return true, else false
+        When the active instance is deployed, the topology will change and some constraints may not be met, but this is just a really small case so that we don't have to consider it.
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param active_server_index: active server index
+        :param cur_server_index: current server index
+        :return: true or false
+        """
+        assert test_env != TestEnv.NoBackup
+        # principle 1
+        if test_env == TestEnv.Aggressive:
+            if model.topo.nodes[cur_server_index]["computing_resource"] < model.sfc_list[
+                cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
+            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] < \
+                    model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.FullyReservation:
+            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] - \
+                    model.topo.nodes[cur_server_index]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+
+        # principle 2
+        for path in nx.all_shortest_paths(model.topo, active_server_index, cur_server_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
+                                           test_env):
+                return True
+        return False
+
+
     def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
         """
         Used to narrow available decision set
@@ -792,7 +941,7 @@ class ICCheuristic(DecisionMaker):
                 desision_set.append(Decision(i, -1))
                 continue
             for j in range(len(model.topo.nodes)):
-                if self.verify_standby(model, cur_sfc_index, i, j, test_env):
+                if self.verify_standby(model, cur_sfc_index, i, j, test_env) and i != j:
                     desision_set.append(Decision(i, j))
         return desision_set
 
@@ -816,10 +965,10 @@ class ICCheuristic(DecisionMaker):
         if len(decisions) == 0:
             return decision
         for i in range(0, len(decisions)):
-            decisions[i].active_path, decisions[i].standby_path, decisions[i].update_path = \
+            flag, decisions[i].active_path, decisions[i].standby_path, decisions[i].update_path = \
                 self.select_paths(model, cur_sfc_index, decisions[i].active_server, decisions[i].standby_server, test_env)
         decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'] - \
-                                                     model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+                                                     model.topo.nodes[x.active_server]['active'])) # , len(x.update_path)
         for i in range(0, len(decisions)):
             if len(decisions[i].update_path) > 0:
                 return decisions[i]
@@ -833,12 +982,50 @@ class Worst(DecisionMaker):
     def __init__(self):
         super(Worst, self).__init__()
 
+    def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int,
+                       test_env: TestEnv):
+        """
+        Verify if current stand-by sfc can be put on current server based on following three principles
+        1. if the remaining computing resource is still enough for this sfc
+        2. if available paths for updating still exist
+        Both these three principles are met can return true, else false
+        When the active instance is deployed, the topology will change and some constraints may not be met, but this is just a really small case so that we don't have to consider it.
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param active_server_index: active server index
+        :param cur_server_index: current server index
+        :return: true or false
+        """
+        assert test_env != TestEnv.NoBackup
+        # principle 1
+        if test_env == TestEnv.Aggressive:
+            if model.topo.nodes[cur_server_index]["computing_resource"] < model.sfc_list[
+                cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
+            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] < \
+                    model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+        if test_env == TestEnv.FullyReservation:
+            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] - \
+                    model.topo.nodes[cur_server_index]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
+                return False
+
+        # principle 2
+        for path in nx.all_shortest_paths(model.topo, active_server_index, cur_server_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
+                                           test_env):
+                return True
+        return False
+
     def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
         """
         Used to narrow available decision set
         :param test_env:
         :param model: model
         :param cur_sfc_index: cur processing sfc index
+
         :return: decision sets
         """
         desision_set = []
@@ -849,7 +1036,7 @@ class Worst(DecisionMaker):
                 desision_set.append(Decision(i, -1))
                 continue
             for j in range(len(model.topo.nodes)):
-                if self.verify_standby(model, cur_sfc_index, i, j, test_env):
+                if self.verify_standby(model, cur_sfc_index, i, j, test_env) and i != j:
                     desision_set.append(Decision(i, j))
         return desision_set
 
@@ -873,7 +1060,7 @@ class Worst(DecisionMaker):
         if len(decisions) == 0:
             return decision
         for i in range(0, len(decisions)):
-            decisions[i].active_path, decisions[i].standby_path, decisions[i].update_path = \
+            flag, decisions[i].active_path, decisions[i].standby_path, decisions[i].update_path = \
                 self.select_paths(model, cur_sfc_index, decisions[i].active_server, decisions[i].standby_server, test_env)
         decisions = sorted(decisions, key=lambda x: (- model.topo.nodes[x.active_server]['computing_resource'] + \
                                                      model.topo.nodes[x.active_server]['active'], len(x.update_path)))
