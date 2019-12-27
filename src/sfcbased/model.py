@@ -103,6 +103,7 @@ class Monitor(BaseObject):
     """
     Designed for Monitoring the actions of whole system
     """
+
     action_list = []
     format_logs = []
 
@@ -173,11 +174,9 @@ class Monitor(BaseObject):
             if len(item) == 4:
                 if item[2] == State.Normal and item[3] == State.Backup:
                     success_num += 1
-        print(success_num, fail_num)
         if fail_num == 0:
             return 0
         return fail_num / (fail_num + success_num)
-
 
 class Instance(BaseObject):
     """
@@ -344,14 +343,41 @@ class Model(BaseObject):
                     self.sfc_list[i].standby_sfc.starttime,
                     self.sfc_list[i].standby_sfc.downtime))
 
-    def calculate_real_fail_rate(self):
+    def calculate_throughput(self):
         """
-        What is the real fail rate?
-        If the broken reason is StandbyStartFailed, then
-        :return: real fail rate
+        Calculate throughput
+        :return: throughput
         """
+        throughput = 0
+        for i in range(len(self.sfc_list)):
+            cur_sfc = self.sfc_list[i]
+            if cur_sfc.state != State.Failed:
+                throughput += cur_sfc.tp
+        return throughput
 
+    def calculate_total_reward(self):
+        """
+        Calculate throughput
+        :return: throughput
+        """
+        total_reward = 0
+        for i in range(len(self.sfc_list)):
+            cur_sfc = self.sfc_list[i]
+            if cur_sfc.state != State.Failed:
+                total_reward += 1
+        return total_reward
 
+    def calculate_service_time(self):
+        """
+        Calculate throughput
+        :return: throughput
+        """
+        time = 0
+        for i in range(len(self.sfc_list)):
+            cur_sfc = self.sfc_list[i]
+            if cur_sfc.state == State.Broken:
+                time += cur_sfc.active_sfc.downtime - cur_sfc.active_sfc.starttime + cur_sfc.standby_sfc.downtime - cur_sfc.standby_sfc.starttime
+        return time
 
     def calculate_fail_rate(self):
         """
@@ -586,8 +612,8 @@ class DecisionMaker(BaseObject):
             decision.set_standby_path_c2d(paths[1][1])
             decision.set_update_path(paths[2])
         else:
-            decision.set_active_path_s2c(paths[0])
-            decision.set_active_path_c2d(paths[1])
+            decision.set_active_path_s2c(paths[0][0])
+            decision.set_active_path_c2d(paths[0][1])
         return True, decision
 
     def select_path(self, path_set: List, coupled: bool):
@@ -654,7 +680,7 @@ class DecisionMaker(BaseObject):
                 active_paths.append([temp_active_s2c, temp_active_c2d])
                 flag = False
             active_path = self.select_path(active_paths, True)
-            return flag, active_path
+            return [flag, active_path]
 
         # calculate paths for active instance
         flag = True

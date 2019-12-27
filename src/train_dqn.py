@@ -8,10 +8,12 @@ if pf == "Windows":
     SAMPLE_FILE = "model\\sample"
     TARGET_FILE = "model\\target"
     EXP_REPLAY_FILE = "model\\replay.pkl"
+    TRACE_FILE = "model\\trace.pkl"
 elif pf == "Linux":
     SAMPLE_FILE = "model/sample"
     TARGET_FILE = "model/target"
     EXP_REPLAY_FILE = "model/replay.pkl"
+    TRACE_FILE = "model/trace.pkl"
 
 #todo adjust the batch size and replay size
 GAMMA = 0.5
@@ -21,7 +23,7 @@ ACTION_SHAPE = 2
 REPLAY_SIZE = 10000
 EPSILON = 0.0
 EPSILON_START = 1.0
-EPSILON_FINAL = 0.2
+EPSILON_FINAL = 0.3
 EPSILON_DECAY = 50
 LEARNING_RATE = 1e-5
 SYNC_INTERVAL = 500
@@ -70,6 +72,12 @@ if __name__ == "__main__":
             for target_param, param in zip(tgt_net.parameters(), net.parameters()):
                 target_param.data.copy_(param.data)
             buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
+        if os.path.exists(TRACE_FILE):
+            with open(TRACE_FILE, 'rb') as f:
+                reward_trace = pickle.load(f)  # read file and build object
+        else:
+            reward_trace = []
+
 
         decision_maker = DQNDecisionMaker(net=net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA)
 
@@ -87,8 +95,7 @@ if __name__ == "__main__":
         for cur_time in tqdm(range(0, duration)):
 
             # generate failed instances
-            # failed_instances = generate_failed_instances_time_slot(model, cur_time)
-            failed_instances = []
+            failed_instances = generate_failed_instances_time_slot(model, cur_time)
             # handle state transition
             state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 
@@ -119,14 +126,51 @@ if __name__ == "__main__":
                         loss_t.backward()
                         # print(decision_maker.net.fc7.weight.data)
                         optimizer.step()
-
         torch.save(decision_maker.net, SAMPLE_FILE)
         torch.save(decision_maker.tgt_net, TARGET_FILE)
         with open(EXP_REPLAY_FILE, 'wb') as f:  # open file with write-mode
             model_string = pickle.dump(decision_maker.buffer, f)  # serialize and save object
 
+        # test
+        action_list = []
+        tgt_net = decision_maker.tgt_net
+        buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
+        decision_maker = DQNDecisionMaker(net=tgt_net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA)
+
+        if load_model:
+            with open(model_file_name, 'rb') as f:
+                model = pickle.load(f)  # read file and build object
+        else:
+            with open(topo_file_name, 'rb') as f:
+                topo = pickle.load(f)  # read file and build object
+                sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
+                model = Model(topo, sfc_list)
+        STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
+
+        for cur_time in tqdm(range(0, duration)):
+
+            # generate failed instances
+            failed_instances = generate_failed_instances_time_slot(model, cur_time)
+
+            # handle state transition
+            state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
+
+            # deploy sfcs / handle each time slot
+            for i in range(len(model.sfc_list)):
+                # for each sfc which locate in this time slot
+                if cur_time <= model.sfc_list[i].time < cur_time + 1:
+                    idx += 1
+                    state, _ = env.get_state(model=model, sfc_index=i)
+                    decision = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
+                    action = DQNAction(decision.active_server, decision.standby_server).get_action()
+                    action_list.append(action)
+        plot_action_distribution(action_list, num_nodes=topo_size)
+        total_reward = model.calculate_total_reward()
+        reward_trace.append(total_reward)
+
+        with open(TRACE_FILE, 'wb') as f:  # open file with write-mode
+            pickle.dump(reward_trace, f)  # serialize and save object
+
         # Monitor.print_log()
         # model.print_start_and_down()
-        print("fail rate: ", model.calculate_fail_rate())
-        print("real fail rate: ", Monitor.calculate_real_fail_rate())
-        print("accept rate: ", model.calculate_accept_rate())
+        report(model)

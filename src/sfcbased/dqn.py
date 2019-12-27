@@ -73,7 +73,7 @@ class DQN(nn.Module):
         # # # print("output: ", x)
         #
         # x = self.fc4(x)
-        # x = self.ReLU(x)
+        # x = self.LeakyReLU(x)
         # #
         # x = self.fc5(x)
         # x = self.LeakyReLU(x)

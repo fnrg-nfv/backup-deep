@@ -40,7 +40,7 @@ When there only cons
 
 ### Running time cost
 
-### Average total reward
+### Total reward
 
 ## Comparison between different schemes 
 

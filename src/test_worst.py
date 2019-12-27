@@ -26,9 +26,7 @@ if __name__ == "__main__":
 # Monitor.print_log()
 
 # model.print_start_and_down()
-    print("\nfail rate: ", model.calculate_fail_rate())
-    print("real fail rate: ", Monitor.calculate_real_fail_rate())
-    print("accept rate: ", model.calculate_accept_rate())
+    report(model)
 
     print("\nDone!")
 

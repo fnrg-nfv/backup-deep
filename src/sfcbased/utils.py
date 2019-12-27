@@ -120,7 +120,6 @@ def plot_action_distribution(action_list: List, num_nodes: int):
     ax1.bar3d(x, y, bottom, width, depth, data, shade=True)
     plt.show()
 
-
 def plotActionTrace(action_trace):
     for key in action_trace.keys():
         plt.plot(action_trace[key], label=str(int(key)))
@@ -132,6 +131,22 @@ def plotActionTrace(action_trace):
     plt.legend()
     plt.tight_layout()
     plt.show()
+
+def report(model: Model):
+    fail_rate = model.calculate_fail_rate()
+    real_fail_rate = Monitor.calculate_real_fail_rate()
+    throughput = model.calculate_throughput()
+    service_time = model.calculate_service_time()
+    total_reward = model.calculate_total_reward()
+    accept_rate = model.calculate_accept_rate()
+
+    print("fail rate: ", fail_rate)
+    print("real fail rate: ", real_fail_rate)
+    print("throughput: ", throughput)
+    print("service time: ", service_time)
+    print("total reward: ", total_reward)
+    print("accept rate: ", accept_rate)
+    return fail_rate, real_fail_rate, throughput, service_time, total_reward, accept_rate
 
 
 def main():
