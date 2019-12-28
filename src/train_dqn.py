@@ -164,7 +164,7 @@ if __name__ == "__main__":
                     decision = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
                     action = DQNAction(decision.active_server, decision.standby_server).get_action()
                     action_list.append(action)
-        plot_action_distribution(action_list, num_nodes=topo_size)
+        # plot_action_distribution(action_list, num_nodes=topo_size)
         total_reward = model.calculate_total_reward()
         reward_trace.append(total_reward)
 

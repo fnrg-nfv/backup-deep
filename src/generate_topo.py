@@ -5,15 +5,25 @@ import platform
 
 pf = platform.system()
 
-topo_size = 15 # topology size
+topo_size = 23 # topology size
 sfc_size = 3000 # number of SFCs
 duration = 300 # simulation time
 process_capacity = 5 # each time only can process 10 sfcs
 topo_file_name = "model\\topo.pkl" if pf == "Windows" else "model/topo.pkl" # file name
 model_file_name = "model\\model.pkl" if pf == "Windows" else "model/model.pkl" # file name
+
 jitter = True
 test_env = TestEnv.MaxReservation
 load_model = False
+
+if load_model:
+    with open(model_file_name, 'rb') as f:
+        model = pickle.load(f)  # read file and build object
+        topo_size = len(model.topo.nodes())
+else:
+    with open(topo_file_name, 'rb') as f:
+        topo = pickle.load(f)  # read file and build object
+        topo_size = len(topo.nodes())
 
 if __name__ == "__main__":
     topo = generate_topology(size=topo_size)

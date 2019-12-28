@@ -240,7 +240,7 @@ class DQNDecisionMaker(DecisionMaker):
 
     def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         if self.net.tgt:
-            # action_indexs = self.narrow_action_index_set_for_tgt(model, cur_sfc_index, test_env)
+            # action_indexs = self.narrow_action_index_set(model, cur_sfc_index, test_env)
             action_indexs = []
             if len(action_indexs) != 0:
                 action_indexs = torch.tensor(action_indexs, device=self.device)
@@ -248,6 +248,7 @@ class DQNDecisionMaker(DecisionMaker):
             state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
             self.net.eval()
             q_vals_v = self.net(state_v)  # input to network, and get output
+
             q_vals_v = torch.index_select(q_vals_v, dim=1, index=action_indexs) if len(action_indexs) != 0 else q_vals_v # select columns
             _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
             action_index = action_indexs[int(act_v.item())] if len(action_indexs) != 0 else act_v.item()
