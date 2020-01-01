@@ -32,7 +32,14 @@ if __name__ == "__main__":
         reward_trace = pickle.load(f)  # read file and build object
 
     # print(compare(reward_trace, 924, 5))
-    reward_trace = reward_trace[0:1200]
-    with open("model\\trace.pkl", 'wb') as f:  # open file with write-mode
-        pickle.dump(reward_trace, f)  # serialize and save object
+    # reward_trace = reward_trace[0:1200]
+    # for i in range(len(reward_trace)):
+    #     if reward_trace[i] > 100:
+    #         reward_trace[i] -= 100
+
+    print(compare(reward_trace, 1064, 3))
+    print(compare(reward_trace, 1249, 3))
+    print(compare(reward_trace, 1412, 3))
+    # with open("model\\trace.pkl", 'wb') as f:  # open file with write-mode
+    #     pickle.dump(reward_trace, f)  # serialize and save object
 

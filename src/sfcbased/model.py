@@ -75,6 +75,7 @@ class Decision(BaseObject):
         :param active_server: server index of active instance
         :param standby_server: server index of standby instance, if not backup, then -1
         """
+        self.flag = VariableState.Uninitialized
         self.active_server = active_server
         self.standby_server = standby_server
         self.active_path_s2c = VariableState.Uninitialized
@@ -407,6 +408,38 @@ class Model(BaseObject):
                 num += 1
         return 1 - num / len(self.sfc_list)
 
+    def calculate_server_occupied_rate(self):
+        """
+        Calculate accept rate
+        :return: a list
+        """
+        server_rate = []
+        for node in self.topo.nodes(data=True):
+            server = dict()
+            server["active"] = node[1]['active'] / node[1]['computing_resource']
+            server["reserved"] = node[1]['reserved'] / node[1]['computing_resource']
+            server_rate.append(server)
+        return server_rate
+
+    def calculate_link_occupied_rate(self):
+        """
+        Calculate accept rate
+        :return: a list
+        """
+        link_rate = []
+        for edge in self.topo.edges(data=True):
+            link = dict()
+            link["active"] = edge[2]['active'] / edge[2]['bandwidth']
+            link["reserved"] = edge[2]['reserved'] / edge[2]['bandwidth']
+            if link["active"] > 1:
+                print("active: ", edge[2]['active'], edge[2]['bandwidth'])
+                print(edge[2]["sbsfcs_s2c"], edge[2]["sbsfcs_c2d"])
+            if link["reserved"] > 1:
+                print("reserved: ", edge[2]['reserved'], edge[2]['bandwidth'])
+                print(edge[2]["sbsfcs_s2c"], edge[2]["sbsfcs_c2d"])
+            link_rate.append(link)
+        return link_rate
+
 class DecisionMaker(BaseObject):
     """
     The class used to make deploy decision
@@ -563,7 +596,7 @@ class DecisionMaker(BaseObject):
         """
         return Decision()
 
-    def make_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):  # todo: make state more regulated
+    def make_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         """
         make deploy decisions, and check up if this decision can be placed, consider no backup and with backup
         :param model: the model
@@ -572,7 +605,6 @@ class DecisionMaker(BaseObject):
         :param test_env: test environment
         :return: success or failed, the real decision
         """
-
         decision = self.generate_decision(model, cur_sfc_index, state, test_env)
         assert decision.active_server != VariableState.Uninitialized
 
@@ -605,16 +637,99 @@ class DecisionMaker(BaseObject):
         if not flag:
             return False, decision
 
+        def final_check():
+            """
+            This function check if the active server and the stand-by server is the same server, and check if
+            each link is not satified because we don't jointly consider the active_s2c, active_c2d, update_path,
+            standby_s2c and standby_c2d
+            :return: true or false
+            """
+            return True
+            active = dict()
+            standby = dict()
+            active_s2c = paths[0][0]
+            active_c2d = paths[0][1]
+            for i in range(1, len(active_s2c)):
+                if (active_s2c[i - 1], active_s2c[i]) not in active.keys():
+                    active[active_s2c[i - 1], active_s2c[i]] = 0
+                active[active_s2c[i - 1], active_s2c[i]] += model.sfc_list[cur_sfc_index].tp
+            for i in range(1, len(active_c2d)):
+                if (active_c2d[i - 1], active_c2d[i]) not in active.keys():
+                    active[active_c2d[i - 1], active_c2d[i]] = 0
+                active[active_c2d[i - 1], active_c2d[i]] += model.sfc_list[cur_sfc_index].tp
+
+            if test_env != TestEnv.NoBackup:
+                update = paths[2]
+                standby_s2c = paths[1][0]
+                standby_c2d = paths[1][1]
+                for i in range(1, len(update)):
+                    if (update[i - 1], update[i]) not in active.keys():
+                        active[update[i - 1], update[i]] = 0
+                    active[update[i - 1], update[i]] += model.sfc_list[cur_sfc_index].update_tp
+
+                for item in active:
+                    if model.topo.edges[item]["active"] + active[item] > model.topo.edges[item]["bandwidth"]:
+                        return False
+
+                if test_env == TestEnv.FullyReservation:
+                    for i in range(1, len(standby_s2c)):
+                        if (standby_s2c[i - 1], standby_s2c[i]) not in standby.keys():
+                            standby[standby_s2c[i - 1], standby_s2c[i]] = 0
+                        standby[standby_s2c[i - 1], standby_s2c[i]] += model.sfc_list[cur_sfc_index].tp
+                    for i in range(1, len(standby_c2d)):
+                        if (standby_c2d[i - 1], standby_c2d[i]) not in standby.keys():
+                            standby[standby_c2d[i - 1], standby_c2d[i]] = 0
+                        standby[standby_c2d[i - 1], standby_c2d[i]] += model.sfc_list[cur_sfc_index].tp
+                    total = dict()
+                    for item in active:
+                        if item not in total.keys():
+                            total[item] = 0
+                        total[item] += active[item]
+                    for item in standby:
+                        if item not in total.keys():
+                            total[item] = 0
+                        total[item] += standby[item]
+                    for item in total:
+                        if model.topo.edges[item]["active"] + total[item] + model.topo.edges[item]["reserved"] > model.topo.edges[item[0], item[1]]["bandwidth"]:
+                            return False
+                    return True
+
+                if test_env == TestEnv.MaxReservation:
+                    for i in range(1, len(standby_s2c)):
+                        if (standby_s2c[i - 1], standby_s2c[i]) not in standby.keys():
+                            standby[standby_s2c[i - 1], standby_s2c[i]] = 0
+                        standby[standby_s2c[i - 1], standby_s2c[i]] = max(model.sfc_list[cur_sfc_index].tp, standby[standby_s2c[i - 1], standby_s2c[i]])
+                    for i in range(1, len(standby_c2d)):
+                        if (standby_c2d[i - 1], standby_c2d[i]) not in standby.keys():
+                            standby[standby_c2d[i - 1], standby_c2d[i]] = 0
+                        standby[standby_c2d[i - 1], standby_c2d[i]] = max(model.sfc_list[cur_sfc_index].tp, standby[standby_c2d[i - 1], standby_c2d[i]])
+                    for item in active:
+                        if item not in standby.keys():
+                            standby[item] = 0
+                        if model.topo.edges[item]["active"] + active[item] + max(model.topo.edges[item]["reserved"], standby[item]) > model.topo.edges[item[0], item[1]]["bandwidth"]:
+                            return False
+                    return True
+                return True
+            else:
+                for item in active:
+                    if model.topo.edges[item[0], item[1]]["active"] + active[item] > model.topo.edges[item[0], item[1]]["bandwidth"]:
+                        return False
+                return True
+
         if test_env != TestEnv.NoBackup:
+            # if not final_check():
+            #     flag = False
             decision.set_active_path_s2c(paths[0][0])
             decision.set_active_path_c2d(paths[0][1])
             decision.set_standby_path_s2c(paths[1][0])
             decision.set_standby_path_c2d(paths[1][1])
             decision.set_update_path(paths[2])
         else:
+            # if not final_check():
+            #     flag = False
             decision.set_active_path_s2c(paths[0][0])
             decision.set_active_path_c2d(paths[0][1])
-        return True, decision
+        return flag, decision
 
     def select_path(self, path_set: List, coupled: bool):
         """
@@ -807,7 +922,7 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
         decision = random.sample(decisions, 1)[0]
         return decision
 
-    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):  # todo
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         """
         generate new decision, don't check if it can be deployed
         :param model: model
@@ -822,6 +937,164 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
             decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
             return decision
         decision = self.select_decision_from_decisions(decisions)
+        return decision
+
+
+class ICCDecisionMakerWithStrongGuarantee(DecisionMaker):
+    """
+    The class used to make random decision
+    """
+
+    def __init__(self):
+        super(ICCDecisionMakerWithStrongGuarantee, self).__init__()
+
+    def select_decision_from_decisions(self, decisions: List):
+        decision = random.sample(decisions, 1)[0]
+        return decision
+
+    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+        """
+        select paths for determined active instance server index and stand-by instance server index
+        :param model: model
+        :param sfc_index: sfc index
+        :param active_index: active server index
+        :param standby_index: stand-by server index
+        :param test_env: test environment
+        :return: true or false, select path
+        """
+
+        # No backup condition
+        assert test_env != TestEnv.NoBackup
+
+        # calculate paths for updating
+        update_paths = []
+        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
+        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+                update_paths.append(path)
+        if len(update_paths) == 0:
+            update_paths.append(temp_update)
+        update_path = self.select_path(update_paths, False)
+        return update_path
+
+    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int, test_env: TestEnv):
+        """
+        Used to narrow available decision set
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: cur processing sfc index
+        :return: decision sets
+        """
+        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index, test_env) and self.verify_standby(model, cur_sfc_index, cur_active_index, cur_standby_index, test_env):
+            return True
+        return False
+
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
+        """
+        generate new decision, don't check if it can be deployed
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param test_env: test environment
+        :return: decision
+        """
+        decisions = []
+        for i in range(len(model.topo.nodes)):
+            for j in range(len(model.topo.nodes)):
+                decision = Decision()
+                decision.active_server = i
+                decision.standby_server = j
+                decision.flag = self.judge_decision(model, i, j, cur_sfc_index, test_env)
+                decision.update_path = self.select_paths_for_updating(model, cur_sfc_index, i, j, test_env)
+                decisions.append(decision)
+
+        decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'] -
+                                                         model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+
+        for decision in decisions:
+            if decision.flag:
+                return decision
+        decision = Decision()
+        decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+        decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+        return decision
+
+
+class WorstDecisionMakerWithStrongGuarantee(DecisionMaker):
+    """
+    The class used to make random decision
+    """
+
+    def __init__(self):
+        super(WorstDecisionMakerWithStrongGuarantee, self).__init__()
+
+    def select_decision_from_decisions(self, decisions: List):
+        decision = random.sample(decisions, 1)[0]
+        return decision
+
+    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+        """
+        select paths for determined active instance server index and stand-by instance server index
+        :param model: model
+        :param sfc_index: sfc index
+        :param active_index: active server index
+        :param standby_index: stand-by server index
+        :param test_env: test environment
+        :return: true or false, select path
+        """
+
+        # No backup condition
+        assert test_env != TestEnv.NoBackup
+
+        # calculate paths for updating
+        update_paths = []
+        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
+        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+                update_paths.append(path)
+        if len(update_paths) == 0:
+            update_paths.append(temp_update)
+        update_path = self.select_path(update_paths, False)
+        return update_path
+
+    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int, test_env: TestEnv):
+        """
+        Used to narrow available decision set
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: cur processing sfc index
+        :return: decision sets
+        """
+        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index, test_env) and self.verify_standby(model, cur_sfc_index, cur_active_index, cur_standby_index, test_env):
+            return True
+        return False
+
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
+        """
+        generate new decision, don't check if it can be deployed
+        :param model: model
+        :param cur_sfc_index: current sfc index
+        :param test_env: test environment
+        :return: decision
+        """
+        decisions = []
+        for i in range(len(model.topo.nodes)):
+            for j in range(len(model.topo.nodes)):
+                decision = Decision()
+                decision.active_server = i
+                decision.standby_server = j
+                decision.flag = self.judge_decision(model, i, j, cur_sfc_index, test_env)
+                decision.update_path = self.select_paths_for_updating(model, cur_sfc_index, i, j, test_env)
+                decisions.append(decision)
+
+        decisions = sorted(decisions, key=lambda x: ( - model.topo.nodes[x.active_server]['computing_resource'] +
+                                                         model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+
+        for decision in decisions:
+            if decision.flag:
+                return decision
+        decision = Decision()
+        decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
+        decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         return decision
 
 
@@ -857,7 +1130,7 @@ class RandomDecisionMakerWithStrongGuarantee(DecisionMaker):
         decision = random.sample(decisions, 1)[0]
         return decision
 
-    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):  # todo
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         """
         generate new decision, don't check if it can be deployed
         :param model: model
@@ -871,7 +1144,6 @@ class RandomDecisionMakerWithStrongGuarantee(DecisionMaker):
         for d in decisions:
             if all_active[d.active_server] == 0:
                 all_active[d.active_server] = 1
-        print("available active servers: ", sum(all_active))
 
         if len(decisions) == 0:
             decision = Decision()
@@ -880,7 +1152,6 @@ class RandomDecisionMakerWithStrongGuarantee(DecisionMaker):
             return decision
         decision = self.select_decision_from_decisions(decisions)
         return decision
-
 
 
 class RandomDecisionMaker(DecisionMaker):
@@ -950,8 +1221,37 @@ class ICCheuristic(DecisionMaker):
                 return True
         return False
 
+    def select_decision_from_decisions(self, decisions: List):
+        # decisions = decisions.sort()
+        decision = random.sample(decisions, 1)[0]
+        return decision
 
-    def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
+    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+        """
+        select paths for determined active instance server index and stand-by instance server index
+        :param model: model
+        :param sfc_index: sfc index
+        :param active_index: active server index
+        :param standby_index: stand-by server index
+        :param test_env: test environment
+        :return: true or false, select path
+        """
+
+        # No backup condition
+        assert test_env != TestEnv.NoBackup
+
+        # calculate paths for updating
+        update_paths = []
+        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
+        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+                update_paths.append(path)
+        if len(update_paths) == 0:
+            update_paths.append(temp_update)
+        update_path = self.select_path(update_paths, False)
+        return update_path
+
+    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int, test_env: TestEnv):
         """
         Used to narrow available decision set
         :param test_env:
@@ -959,24 +1259,11 @@ class ICCheuristic(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        desision_set = []
-        for i in range(len(model.topo.nodes)):
-            if not self.verify_active(model, cur_sfc_index, i, test_env):
-                continue
-            if test_env == TestEnv.NoBackup:
-                desision_set.append(Decision(i, -1))
-                continue
-            for j in range(len(model.topo.nodes)):
-                if self.verify_standby(model, cur_sfc_index, i, j, test_env) and i != j:
-                    desision_set.append(Decision(i, j))
-        return desision_set
+        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index, test_env) and self.verify_standby(model, cur_sfc_index, cur_active_index, cur_standby_index, test_env):
+            return True
+        return False
 
-    def select_decision_from_decisions(self, decisions: List):
-        # decisions = decisions.sort()
-        decision = random.sample(decisions, 1)[0]
-        return decision
-
-    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):  # todo
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         """
         generate new decision, don't check if it can be deployed
         :param model: model
@@ -984,20 +1271,25 @@ class ICCheuristic(DecisionMaker):
         :param test_env: test environment
         :return: decision
         """
-        decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
+        decisions = []
+        for i in range(len(model.topo.nodes)):
+            for j in range(len(model.topo.nodes)):
+                decision = Decision()
+                decision.active_server = i
+                decision.standby_server = j
+                decision.flag = self.judge_decision(model, i, j, cur_sfc_index, test_env)
+                decision.update_path = self.select_paths_for_updating(model, cur_sfc_index, i, j, test_env)
+                decisions.append(decision)
+
+        decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'] -
+                                                         model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+
+        for decision in decisions:
+            if decision.flag:
+                return decision
         decision = Decision()
         decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
-        if len(decisions) == 0:
-            return decision
-        for i in range(0, len(decisions)):
-            flag, decisions[i].active_path, decisions[i].standby_path, decisions[i].update_path = \
-                self.select_paths(model, cur_sfc_index, decisions[i].active_server, decisions[i].standby_server, test_env)
-        decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'] - \
-                                                     model.topo.nodes[x.active_server]['active'])) # , len(x.update_path)
-        for i in range(0, len(decisions)):
-            if len(decisions[i].update_path) > 0:
-                return decisions[i]
         return decision
 
 class Worst(DecisionMaker):
@@ -1045,33 +1337,50 @@ class Worst(DecisionMaker):
                 return True
         return False
 
-    def narrow_decision_set(self, model: Model, cur_sfc_index: int, test_env: TestEnv):
-        """
-        Used to narrow available decision set
-        :param test_env:
-        :param model: model
-        :param cur_sfc_index: cur processing sfc index
-
-        :return: decision sets
-        """
-        desision_set = []
-        for i in range(len(model.topo.nodes)):
-            if not self.verify_active(model, cur_sfc_index, i, test_env):
-                continue
-            if test_env == TestEnv.NoBackup:
-                desision_set.append(Decision(i, -1))
-                continue
-            for j in range(len(model.topo.nodes)):
-                if self.verify_standby(model, cur_sfc_index, i, j, test_env) and i != j:
-                    desision_set.append(Decision(i, j))
-        return desision_set
-
     def select_decision_from_decisions(self, decisions: List):
         # decisions = decisions.sort()
         decision = random.sample(decisions, 1)[0]
         return decision
 
-    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):  # todo
+
+    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+        """
+        select paths for determined active instance server index and stand-by instance server index
+        :param model: model
+        :param sfc_index: sfc index
+        :param active_index: active server index
+        :param standby_index: stand-by server index
+        :param test_env: test environment
+        :return: true or false, select path
+        """
+
+        # No backup condition
+        assert test_env != TestEnv.NoBackup
+
+        # calculate paths for updating
+        update_paths = []
+        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
+        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+                update_paths.append(path)
+        if len(update_paths) == 0:
+            update_paths.append(temp_update)
+        update_path = self.select_path(update_paths, False)
+        return update_path
+
+    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int, test_env: TestEnv):
+        """
+        Used to narrow available decision set
+        :param test_env:
+        :param model: model
+        :param cur_sfc_index: cur processing sfc index
+        :return: decision sets
+        """
+        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index, test_env) and self.verify_standby(model, cur_sfc_index, cur_active_index, cur_standby_index, test_env):
+            return True
+        return False
+
+    def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         """
         generate new decision, don't check if it can be deployed
         :param model: model
@@ -1079,21 +1388,27 @@ class Worst(DecisionMaker):
         :param test_env: test environment
         :return: decision
         """
-        decisions = self.narrow_decision_set(model, cur_sfc_index, test_env)
+        decisions = []
+        for i in range(len(model.topo.nodes)):
+            for j in range(len(model.topo.nodes)):
+                decision = Decision()
+                decision.active_server = i
+                decision.standby_server = j
+                decision.flag = self.judge_decision(model, i, j, cur_sfc_index, test_env)
+                decision.update_path = self.select_paths_for_updating(model, cur_sfc_index, i, j, test_env)
+                decisions.append(decision)
+
+        decisions = sorted(decisions, key=lambda x: ( - model.topo.nodes[x.active_server]['computing_resource'] +
+                                                         model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+
+        for decision in decisions:
+            if decision.flag:
+                return decision
         decision = Decision()
         decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
-        if len(decisions) == 0:
-            return decision
-        for i in range(0, len(decisions)):
-            flag, decisions[i].active_path, decisions[i].standby_path, decisions[i].update_path = \
-                self.select_paths(model, cur_sfc_index, decisions[i].active_server, decisions[i].standby_server, test_env)
-        decisions = sorted(decisions, key=lambda x: (- model.topo.nodes[x.active_server]['computing_resource'] + \
-                                                     model.topo.nodes[x.active_server]['active'], len(x.update_path)))
-        for i in range(0, len(decisions)):
-            if len(decisions[i].update_path) > 0:
-                return decisions[i]
         return decision
+
 
 # test
 def main():

@@ -2,6 +2,7 @@ from sfcbased import *
 import pickle
 from pylab import show
 import platform
+import os
 
 pf = platform.system()
 
@@ -16,14 +17,15 @@ jitter = True
 test_env = TestEnv.MaxReservation
 load_model = False
 
-if load_model:
-    with open(model_file_name, 'rb') as f:
-        model = pickle.load(f)  # read file and build object
-        topo_size = len(model.topo.nodes())
-else:
-    with open(topo_file_name, 'rb') as f:
-        topo = pickle.load(f)  # read file and build object
-        topo_size = len(topo.nodes())
+if os.path.exists(topo_file_name) or os.path.exists(model_file_name):
+    if load_model:
+        with open(model_file_name, 'rb') as f:
+            model = pickle.load(f)  # read file and build object
+            topo_size = len(model.topo.nodes())
+    else:
+        with open(topo_file_name, 'rb') as f:
+            topo = pickle.load(f)  # read file and build object
+            topo_size = len(topo.nodes())
 
 if __name__ == "__main__":
     topo = generate_topology(size=topo_size)

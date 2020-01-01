@@ -139,6 +139,8 @@ def report(model: Model):
     service_time = model.calculate_service_time()
     total_reward = model.calculate_total_reward()
     accept_rate = model.calculate_accept_rate()
+    # server_rate = model.calculate_server_occupied_rate()
+    # link_rate = model.calculate_link_occupied_rate()
 
     print("fail rate: ", fail_rate)
     print("real fail rate: ", real_fail_rate)
@@ -146,6 +148,8 @@ def report(model: Model):
     print("service time: ", service_time)
     print("total reward: ", total_reward)
     print("accept rate: ", accept_rate)
+    # print("server rate: ", server_rate)
+    # print("link rate: ", link_rate)
     return fail_rate, real_fail_rate, throughput, service_time, total_reward, accept_rate
 
 

@@ -224,7 +224,7 @@ class DQNDecisionMaker(DecisionMaker):
                     action_index_set.append(i * len(model.topo.nodes) + j)
         return action_index_set
 
-    def __init__(self, net: DQN, tgt_net: DQN, buffer: ExperienceBuffer, action_space: List, gamma: float, epsilon_start: float, epsilon: float, epsilon_final: float, epsilon_decay: float, device: torch.device = torch.device("cpu")):
+    def __init__(self, net: DQN, tgt_net: DQN, buffer: ExperienceBuffer, action_space: List, gamma: float, epsilon_start: float, epsilon: float, epsilon_final: float, epsilon_decay: float, model: Model, device: torch.device = torch.device("cpu")):
         super().__init__()
         self.net = net
         self.tgt_net = tgt_net
@@ -237,10 +237,14 @@ class DQNDecisionMaker(DecisionMaker):
         self.device = device
         self.gamma = gamma
         self.idx = 0
+        self.nodes_num = len(model.topo.nodes)
+        self.forbidden_action_index_tensor = torch.tensor([[1 if i == j else 0 for i in range(self.nodes_num) for j in range(self.nodes_num)]], device=self.device, dtype=torch.bool)
+        self.forbidden_action_index = [1 if i == j else 0 for i in range(self.nodes_num) for j in range(self.nodes_num)]
+
 
     def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
         if self.net.tgt:
-            # action_indexs = self.narrow_action_index_set(model, cur_sfc_index, test_env)
+            # action_indexs = self.narrow_action_index_set_for_tgt(model, cur_sfc_index, test_env)
             action_indexs = []
             if len(action_indexs) != 0:
                 action_indexs = torch.tensor(action_indexs, device=self.device)
@@ -248,7 +252,7 @@ class DQNDecisionMaker(DecisionMaker):
             state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
             self.net.eval()
             q_vals_v = self.net(state_v)  # input to network, and get output
-
+            q_vals_v[self.forbidden_action_index_tensor] = -999
             q_vals_v = torch.index_select(q_vals_v, dim=1, index=action_indexs) if len(action_indexs) != 0 else q_vals_v # select columns
             _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
             action_index = action_indexs[int(act_v.item())] if len(action_indexs) != 0 else act_v.item()
@@ -258,13 +262,19 @@ class DQNDecisionMaker(DecisionMaker):
             if len(action_indexs) != 0:
                 action_indexs = torch.tensor(action_indexs, device=self.device)
             if np.random.random() < self.epsilon:
-                action = action_indexs[random.randint(0, len(action_indexs) - 1)] if len(action_indexs) != 0 else random.randint(0, len(self.action_space) - 1)
+                if len(action_indexs) != 0:
+                    action = action_indexs[random.randint(0, len(action_indexs) - 1)]
+                else:
+                    action = random.randint(0, len(self.action_space) - 1)
+                    while self.forbidden_action_index[action] == 1:
+                        action = random.randint(0, len(self.action_space) - 1)
                 action_index = action
             else:
                 state_a = np.array([state], copy=False)  # make state vector become a state matrix
                 state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
                 self.net.eval()
                 q_vals_v = self.net(state_v)  # input to network, and get output
+                q_vals_v[self.forbidden_action_index_tensor] = -999
                 q_vals_v = torch.index_select(q_vals_v, dim=1, index=action_indexs) if len(action_indexs) != 0 else q_vals_v # select columns
                 _, act_v = torch.max(q_vals_v, dim=1)  # get the max index
                 action_index = action_indexs[int(act_v.item())] if len(action_indexs) != 0 else act_v.item()
@@ -343,6 +353,7 @@ class DQNEnvironment(Environment):
         :return: state vector, done
         """
         state = []
+        node_len = len(model.topo.nodes)
 
         # first part: topo state
         # 1. node state
@@ -371,6 +382,7 @@ class DQNEnvironment(Environment):
         for edge in model.topo.edges(data=True):
             if edge[2]['latency'] > max_l:
                 max_l = edge[2]['latency']
+        max_l = max_l * 6
         for edge in model.topo.edges(data=True):
             state.append(edge[2]['latency'] / max_l)
             state.append((edge[2]['bandwidth'] - edge[2]['active']) / max_e)
@@ -386,8 +398,8 @@ class DQNEnvironment(Environment):
         state.append(sfc.latency / max_l)
         state.append(sfc.update_tp / max_e)
         state.append(sfc.process_latency / max_l)
-        state.append(sfc.s)
-        state.append(sfc.d)
+        state.append(sfc.s / node_len)
+        state.append(sfc.d / node_len)
         return state, False
 
         #second part

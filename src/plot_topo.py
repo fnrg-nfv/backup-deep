@@ -11,5 +11,11 @@ if __name__ == "__main__":
 
     print("\nservers: ", len(topo.nodes()))
     print("edges:", len(topo.edges()))
+    for node in topo.nodes(data=True):
+        print(node[1]['computing_resource'])
+    for edge in topo.edges(data=True):
+        print(edge[2]['bandwidth'])
+        print(edge[2]['latency'])
+
     nx.draw(topo)
     show()

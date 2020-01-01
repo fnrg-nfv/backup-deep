@@ -5,14 +5,14 @@ from train_dqn import REPLAY_SIZE, EPSILON, EPSILON_START, EPSILON_FINAL, EPSILO
 
 # parameters with rl
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-ITERATIONS = 10
+ITERATIONS = 5
 
 # create decision maker(agent) & optimizer & environment
 # create net and target net
 tgt_net = torch.load(TARGET_FILE)
 buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
 
-decision_maker = DQNDecisionMaker(net=tgt_net, tgt_net = tgt_net, buffer = buffer, action_space = ACTION_SPACE, epsilon = EPSILON, epsilon_start = EPSILON_START, epsilon_final = EPSILON_FINAL, epsilon_decay = EPSILON_DECAY, device = DEVICE, gamma = GAMMA)
+# decision_maker = DQNDecisionMaker(net=tgt_net, tgt_net = tgt_net, buffer = buffer, action_space = ACTION_SPACE, epsilon = EPSILON, epsilon_start = EPSILON_START, epsilon_final = EPSILON_FINAL, epsilon_decay = EPSILON_DECAY, device = DEVICE, gamma = GAMMA, model=model)
 
 env = DQNEnvironment()
 
@@ -41,12 +41,12 @@ if __name__ == "__main__":
                 sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
                 model = Model(topo, sfc_list)
         STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
-
+        decision_maker = DQNDecisionMaker(net=tgt_net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA, model=model)
         for cur_time in tqdm(range(0, duration)):
 
             # generate failed instances
             failed_instances = generate_failed_instances_time_slot(model, cur_time)
-
+            # failed_instances = []
             # handle state transition
             state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 

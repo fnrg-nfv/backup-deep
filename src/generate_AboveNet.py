@@ -2,10 +2,10 @@ from generate_topo import *
 
 if __name__ == "__main__":
     topo = nx.Graph()
-    cs_low = 20000
-    cs_high = 40000
-    bandwidth_low = 100
-    bandwidth_high = 300
+    cs_low = 60000
+    cs_high = 80000
+    bandwidth_low = 400
+    bandwidth_high = 800
     fail_rate_low = 0.0
     fail_rate_high = 0.4
     latency_low = 2

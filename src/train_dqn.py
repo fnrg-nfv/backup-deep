@@ -25,7 +25,7 @@ EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.3
 EPSILON_DECAY = 50
-LEARNING_RATE = 1e-5
+LEARNING_RATE = 1e-3
 SYNC_INTERVAL = 500
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
@@ -33,6 +33,7 @@ ACTION_LEN = len(ACTION_SPACE)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 ITERATIONS = 10000
 DOUBLE = True
+TEST = True
 
 if load_model:
     with open(model_file_name, 'rb') as f:
@@ -78,8 +79,7 @@ if __name__ == "__main__":
         else:
             reward_trace = []
 
-
-        decision_maker = DQNDecisionMaker(net=net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA)
+        decision_maker = DQNDecisionMaker(net=net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA, model=model)
 
         optimizer = optim.Adam(decision_maker.net.parameters(), lr=LEARNING_RATE)
         # optimizer = optim.SGD(decision_maker.net.parameters(), lr=LEARNING_RATE, momentum=0.9)
@@ -96,6 +96,7 @@ if __name__ == "__main__":
 
             # generate failed instances
             failed_instances = generate_failed_instances_time_slot(model, cur_time)
+            # failed_instances = []
             # handle state transition
             state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 
@@ -132,45 +133,47 @@ if __name__ == "__main__":
             model_string = pickle.dump(decision_maker.buffer, f)  # serialize and save object
 
         # test
-        action_list = []
-        tgt_net = decision_maker.tgt_net
-        buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
-        decision_maker = DQNDecisionMaker(net=tgt_net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA)
+        if TEST:
+            action_list = []
+            tgt_net = decision_maker.tgt_net
+            buffer = ExperienceBuffer(capacity=REPLAY_SIZE)
+            decision_maker = DQNDecisionMaker(net=tgt_net, tgt_net=tgt_net, buffer=buffer, action_space=ACTION_SPACE, epsilon=EPSILON, epsilon_start=EPSILON_START, epsilon_final=EPSILON_FINAL, epsilon_decay=EPSILON_DECAY, device=DEVICE, gamma=GAMMA, model=model)
 
-        if load_model:
-            with open(model_file_name, 'rb') as f:
-                model = pickle.load(f)  # read file and build object
-        else:
-            with open(topo_file_name, 'rb') as f:
-                topo = pickle.load(f)  # read file and build object
-                sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
-                model = Model(topo, sfc_list)
-        STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
+            if load_model:
+                with open(model_file_name, 'rb') as f:
+                    model = pickle.load(f)  # read file and build object
+            else:
+                with open(topo_file_name, 'rb') as f:
+                    topo = pickle.load(f)  # read file and build object
+                    sfc_list = generate_sfc_list(topo=topo, process_capacity=process_capacity, size=sfc_size, duration=duration, jitter=jitter)
+                    model = Model(topo, sfc_list)
+            STATE_SHAPE = (len(model.topo.nodes()) + len(model.topo.edges())) * 3 + 7
 
-        for cur_time in tqdm(range(0, duration)):
+            for cur_time in tqdm(range(0, duration)):
 
-            # generate failed instances
-            failed_instances = generate_failed_instances_time_slot(model, cur_time)
+                # generate failed instances
+                failed_instances = generate_failed_instances_time_slot(model, cur_time)
+                # failed_instances = []
+                # handle state transition
+                state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
 
-            # handle state transition
-            state_transition_and_resource_reclaim(model, cur_time, test_env, failed_instances)
-
-            # deploy sfcs / handle each time slot
-            for i in range(len(model.sfc_list)):
-                # for each sfc which locate in this time slot
-                if cur_time <= model.sfc_list[i].time < cur_time + 1:
-                    idx += 1
-                    state, _ = env.get_state(model=model, sfc_index=i)
-                    decision = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
-                    action = DQNAction(decision.active_server, decision.standby_server).get_action()
-                    action_list.append(action)
-        # plot_action_distribution(action_list, num_nodes=topo_size)
-        total_reward = model.calculate_total_reward()
-        reward_trace.append(total_reward)
+                # deploy sfcs / handle each time slot
+                for i in range(len(model.sfc_list)):
+                    # for each sfc which locate in this time slot
+                    if cur_time <= model.sfc_list[i].time < cur_time + 1:
+                        idx += 1
+                        state, _ = env.get_state(model=model, sfc_index=i)
+                        decision = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
+                        action = DQNAction(decision.active_server, decision.standby_server).get_action()
+                        action_list.append(action)
+            plot_action_distribution(action_list, num_nodes=topo_size)
+            total_reward = model.calculate_total_reward()
+            reward_trace.append(total_reward)
 
         with open(TRACE_FILE, 'wb') as f:  # open file with write-mode
             pickle.dump(reward_trace, f)  # serialize and save object
 
         # Monitor.print_log()
         # model.print_start_and_down()
+        print("iteration: ", it)
         report(model)
