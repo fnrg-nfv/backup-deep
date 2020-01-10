@@ -25,12 +25,13 @@ EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.3
 EPSILON_DECAY = 50
-LEARNING_RATE = 1e-3
+LEARNING_RATE = 1e-4
 SYNC_INTERVAL = 500
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
 ACTION_LEN = len(ACTION_SPACE)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+DEVICE = torch.device("cpu")
 ITERATIONS = 10000
 DOUBLE = True
 TEST = True
@@ -166,7 +167,7 @@ if __name__ == "__main__":
                         decision = deploy_sfc_item(model, i, decision_maker, cur_time, state, test_env)
                         action = DQNAction(decision.active_server, decision.standby_server).get_action()
                         action_list.append(action)
-            plot_action_distribution(action_list, num_nodes=topo_size)
+            # plot_action_distribution(action_list, num_nodes=topo_size)
             total_reward = model.calculate_total_reward()
             reward_trace.append(total_reward)
 

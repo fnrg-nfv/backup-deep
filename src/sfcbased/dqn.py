@@ -52,10 +52,24 @@ class DQN(nn.Module):
         self.fc2.weight.data = fanin_init(self.fc2.weight.data.size(), init_w, device=self.device)
         self.fc2.bias.data = fanin_init(self.fc2.bias.data.size(), init_w, device=self.device)
 
+        self.fc3.weight.data = fanin_init(self.fc3.weight.data.size(), init_w, device=self.device)
+        self.fc3.bias.data = fanin_init(self.fc3.bias.data.size(), init_w, device=self.device)
+
+        self.fc4.weight.data = fanin_init(self.fc4.weight.data.size(), init_w, device=self.device)
+        self.fc4.bias.data = fanin_init(self.fc4.bias.data.size(), init_w, device=self.device)
+
+        self.fc5.weight.data = fanin_init(self.fc5.weight.data.size(), init_w, device=self.device)
+        self.fc5.bias.data = fanin_init(self.fc5.bias.data.size(), init_w, device=self.device)
+
+        self.fc6.weight.data = fanin_init(self.fc6.weight.data.size(), init_w, device=self.device)
+        self.fc6.bias.data = fanin_init(self.fc6.bias.data.size(), init_w, device=self.device)
+
         self.fc7.weight.data = fanin_init(self.fc7.weight.data.size(), init_w, device=self.device)
         self.fc7.bias.data = fanin_init(self.fc7.bias.data.size(), init_w, device=self.device)
 
     def forward(self, x: torch.Tensor):
+        x.to(device=self.device)
+
         # x = self.bn1(x)
 
         # x = self.BNs[0](x)
@@ -316,8 +330,12 @@ def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, double: boo
     rewards_v = torch.tensor(rewards, dtype=torch.float).to(device)
     done_mask = torch.tensor(dones, dtype=torch.bool).to(device)
 
+
     # action is a list with one dimension, we should use unsqueeze() to span it
-    state_action_values = net(states_v).gather(1, actions_v.unsqueeze(-1)).squeeze(-1)
+    state_action_values = net(states_v).to(device)
+    state_action_values = state_action_values.gather(1, actions_v.unsqueeze(-1))
+    state_action_values = state_action_values.squeeze(-1)
+
 
     if double:
         next_state_actions = net(next_states_v).max(1)[1]
@@ -326,7 +344,8 @@ def calc_loss(batch, net, tgt_net, gamma: float, action_space: List, double: boo
         next_state_values = tgt_net(next_states_v).max(1)[0]
 
     next_state_values[done_mask] = 0.0
-    next_state_values = next_state_values.detach()
+    next_state_values = next_state_values.to(device).detach()
+
     expected_state_action_values = next_state_values * gamma + rewards_v
     return nn.MSELoss()(state_action_values, expected_state_action_values)
 
@@ -382,7 +401,6 @@ class DQNEnvironment(Environment):
         for edge in model.topo.edges(data=True):
             if edge[2]['latency'] > max_l:
                 max_l = edge[2]['latency']
-        max_l = max_l * 6
         for edge in model.topo.edges(data=True):
             state.append(edge[2]['latency'] / max_l)
             state.append((edge[2]['bandwidth'] - edge[2]['active']) / max_e)
@@ -398,8 +416,8 @@ class DQNEnvironment(Environment):
         state.append(sfc.latency / max_l)
         state.append(sfc.update_tp / max_e)
         state.append(sfc.process_latency / max_l)
-        state.append(sfc.s / node_len)
-        state.append(sfc.d / node_len)
+        state.append(sfc.s)
+        state.append(sfc.d)
         return state, False
 
         #second part
