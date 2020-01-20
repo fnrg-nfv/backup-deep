@@ -10,6 +10,7 @@ def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker,
     :param test_env: test environment
     :return: decision
     """
+
     if test_env == TestEnv.NoBackup:
         assert model.sfc_list[sfc_index].state == State.Undeployed
         flag, decision = decision_maker.make_decision(model, sfc_index, state, test_env)
@@ -63,12 +64,11 @@ def deploy_sfcs_in_timeslot(model: Model, decision_maker: DecisionMaker, time: i
     :param test_env: test environment
     :return: nothing
     """
+
     for i in range(len(model.sfc_list)):
         # for each sfc which locate in this time slot
         if time <= model.sfc_list[i].time < time + 1:
             deploy_sfc_item(model, i, decision_maker, time, state, test_env)
-
-
 
 
 def deploy_active(model: Model, sfc_index: int, test_env: TestEnv):
@@ -92,7 +92,7 @@ def deploy_active(model: Model, sfc_index: int, test_env: TestEnv):
     for i in range(len(path_c2d) - 1):
         model.topo.edges[path_c2d[i], path_c2d[i + 1]]["active"] += model.sfc_list[sfc_index].tp
 
-    # No Backup
+    # update path
     if test_env != TestEnv.NoBackup:
         # occupy update bandwidth
         path = model.sfc_list[sfc_index].update_path
@@ -185,7 +185,7 @@ def remove_reservation(model: Model, sfc_index: int):
     # remove computing resource reservation
     model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["sbsfcs"].remove(sfc_index)
     if model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["max_sbsfc_index"] == sfc_index:
-        maxvalue = float("-inf")
+        maxvalue = 0
         maxindex = -1
         for index in model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["sbsfcs"]:
             if model.sfc_list[index].computing_resource > maxvalue:
@@ -200,7 +200,7 @@ def remove_reservation(model: Model, sfc_index: int):
     for i in range(len(path_s2c) - 1):
         model.topo.edges[path_s2c[i], path_s2c[i + 1]]["sbsfcs_s2c"].remove(sfc_index)
         if model.topo.edges[path_s2c[i], path_s2c[i + 1]]["max_sbsfc_index"] == sfc_index:
-            maxvalue = float("-inf")
+            maxvalue = 0
             maxindex = -1
             for index in model.topo.edges[path_s2c[i], path_s2c[i + 1]]["sbsfcs_s2c"]:
                 if model.sfc_list[index].tp > maxvalue:
@@ -215,7 +215,7 @@ def remove_reservation(model: Model, sfc_index: int):
     for i in range(len(path_c2d) - 1):
         model.topo.edges[path_c2d[i], path_c2d[i + 1]]["sbsfcs_c2d"].remove(sfc_index)
         if model.topo.edges[path_c2d[i], path_c2d[i + 1]]["max_sbsfc_index"] == sfc_index:
-            maxvalue = float("-inf")
+            maxvalue = 0
             maxindex = -1
             for index in model.topo.edges[path_c2d[i], path_c2d[i + 1]]["sbsfcs_s2c"]:
                 if model.sfc_list[index].tp > maxvalue:
@@ -227,6 +227,7 @@ def remove_reservation(model: Model, sfc_index: int):
                     maxindex = index
             model.topo.edges[path_c2d[i], path_c2d[i + 1]]["max_sbsfc_index"] = maxindex
             model.topo.edges[path_c2d[i], path_c2d[i + 1]]["reserved"] = maxvalue
+
 
 def standby_start(model: Model, sfc_index: int, test_env: TestEnv):
     """
@@ -244,12 +245,15 @@ def standby_start(model: Model, sfc_index: int, test_env: TestEnv):
             sfc_index].computing_resource
         model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["reserved"] -= model.sfc_list[
             sfc_index].computing_resource
+        model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["sbsfcs"].remove(sfc_index)
         path_s2c = model.sfc_list[sfc_index].standby_sfc.path_s2c
         path_c2d = model.sfc_list[sfc_index].standby_sfc.path_c2d
         for i in range(len(path_s2c) - 1):
+            model.topo.edges[path_s2c[i], path_s2c[i + 1]]["sbsfcs_s2c"].remove(sfc_index)
             model.topo.edges[path_s2c[i], path_s2c[i + 1]]["active"] += model.sfc_list[sfc_index].tp
             model.topo.edges[path_s2c[i], path_s2c[i + 1]]["reserved"] -= model.sfc_list[sfc_index].tp
         for i in range(len(path_c2d) - 1):
+            model.topo.edges[path_c2d[i], path_c2d[i + 1]]["sbsfcs_c2d"].remove(sfc_index)
             model.topo.edges[path_c2d[i], path_c2d[i + 1]]["active"] += model.sfc_list[sfc_index].tp
             model.topo.edges[path_c2d[i], path_c2d[i + 1]]["reserved"] -= model.sfc_list[sfc_index].tp
         return True
@@ -355,13 +359,16 @@ def remove_expired_standby(model: Model, sfc_index: int, test_env: TestEnv):
 
     # FullyReservation - remove reservation
     if test_env == TestEnv.FullyReservation:
+        model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["sbsfcs"].remove(sfc_index)
         model.topo.nodes[model.sfc_list[sfc_index].standby_sfc.server]["reserved"] -= model.sfc_list[
             sfc_index].computing_resource
         path_s2c = model.sfc_list[sfc_index].standby_sfc.path_s2c
         path_c2d = model.sfc_list[sfc_index].standby_sfc.path_c2d
         for i in range(len(path_s2c) - 1):
+            model.topo.edges[path_s2c[i], path_s2c[i + 1]]["sbsfcs_s2c"].remove(sfc_index)
             model.topo.edges[path_s2c[i], path_s2c[i + 1]]["reserved"] -= model.sfc_list[sfc_index].tp
         for i in range(len(path_c2d) - 1):
+            model.topo.edges[path_c2d[i], path_c2d[i + 1]]["sbsfcs_c2d"].remove(sfc_index)
             model.topo.edges[path_c2d[i], path_c2d[i + 1]]["reserved"] -= model.sfc_list[sfc_index].tp
 
     # MaxReservation - remove reservation

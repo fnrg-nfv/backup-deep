@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import warnings
 import matplotlib.cbook
-import math
 import numpy as np
 from sfcbased.model import *
 
@@ -37,11 +36,20 @@ def generate_topology(size: int = 100):
     :return: topology
     """
     topo = nx.Graph()
+    cs_low = 20000
+    cs_high = 40000
+    bandwidth_low = 100
+    bandwidth_high = 300
+    fail_rate_low = 0.0
+    fail_rate_high = 0.4
+    inconnectivity = 15
+    latency_low = 2
+    latency_high = 5
 
     # generate V
     for i in range(size):
-        computing_resource = random.randint(20000, 40000)
-        fail_rate = random.uniform(0.3, 0.7)
+        computing_resource = random.randint(cs_low, cs_high)
+        fail_rate = random.uniform(fail_rate_low, fail_rate_high)
         topo.add_node(i, computing_resource=computing_resource, fail_rate=fail_rate, active=0, reserved=0, max_sbsfc_index=-1, sbsfcs=set())
 
     # generate E
@@ -49,12 +57,12 @@ def generate_topology(size: int = 100):
         for j in range(i + 1, size):
             # make sure the whole network is connected
             if j == i + 1:
-                bandwidth = random.randint(100, 200)
-                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
+                bandwidth = random.randint(bandwidth_low, bandwidth_high)
+                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(latency_low, latency_high), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
                 continue
-            if random.randint(1, 15) == 1:
-                bandwidth = random.randint(100, 200)
-                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(2, 5), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
+            if random.randint(1, inconnectivity) == 1:
+                bandwidth = random.randint(bandwidth_low, bandwidth_high)
+                topo.add_edge(i, j, bandwidth=bandwidth, active=0, reserved=0, latency=random.uniform(latency_low, latency_high), max_sbsfc_index=-1, sbsfcs_s2c=set(), sbsfcs_c2d=set())
     return topo
 
 
@@ -71,7 +79,7 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
 
     # list of sample in increasing order
     each = size // duration
-    min_each = min(each * 2, process_capacity)
+    min_each = each * 2
     sfc_duration = [0 for _ in range(duration)]
     for time in range(duration):
         randint = random.randint(0, min_each)
@@ -86,12 +94,12 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
     timeslot_list.sort()
 
     # generate each sfc
-    cs_low = 3750
+    cs_low =  3750
     cs_high = 7500
-    tp_low = 32
-    tp_high = 128
-    latency_low = 10
-    latency_high = 30
+    tp_low = 32 # 32
+    tp_high = 128 # 128
+    latency_low = 10 # 10
+    latency_high = 30 # 30
     process_latency_low = 0.863
     process_latency_high = 1.725
     TTL_low = 5
@@ -102,7 +110,8 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
             computing_resource = random.randint(cs_low, cs_high) # 5625
             tp = random.randint(tp_low, tp_high) # 80
             latency = random.randint(latency_low, latency_high) # 20
-            update_tp = 0.01 * computing_resource
+            update_tp = 0.001 * computing_resource
+            update_tp = 0
             process_latency = random.uniform(process_latency_low, process_latency_high) # 1.294
             TTL = random.randint(TTL_low, TTL_high)  # sfc's time to live
             s = random.randint(1, nodes_len - 1)
@@ -113,7 +122,8 @@ def generate_sfc_list(topo: nx.Graph, process_capacity: int, size: int = 100, du
             computing_resource = (cs_low + cs_high) // 2 # 5625
             tp = (tp_low + tp_high) // 2 # 80
             latency = (latency_low + latency_high) / 2 # 20
-            update_tp = tp
+            update_tp = 0.001 * computing_resource
+            update_tp = 0
             process_latency = (process_latency_low + process_latency_high) / 2 # 1.294
             TTL = random.randint(TTL_low, TTL_high)  # sfc's time to live
             s = random.randint(1, nodes_len - 1)
