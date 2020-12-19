@@ -78,24 +78,6 @@ def printAction(action, window):
     plt.show()
 
 
-def readDataset(path):
-    data = []
-    dataset = csv.reader(open(path, encoding='utf_8_sig'), delimiter=',')
-    for rol in dataset:
-        data.append(rol)
-    data = data[1:len(data):1]
-    for i in range(len(data)):
-        data[i][0] = literal_eval(data[i][0])
-        data[i][1] = literal_eval(data[i][1])
-        data[i][3] = literal_eval(data[i][3])
-        data[i][2] = float(data[i][2])
-    return data
-
-
-def formatnum(x, pos):
-    return '$%.1f$x$10^{4}$' % (x / 10000)
-
-
 def plot_action_distribution(action_list: List, num_nodes: int):
     """
     Plot the distribution of actions
@@ -120,6 +102,140 @@ def plot_action_distribution(action_list: List, num_nodes: int):
     ax1.bar3d(x, y, bottom, width, depth, data, shade=True)
     plt.show()
 
+
+class PrioritizedExperienceBuffer(object):  # stored as ( s, a, r, s_ ) in SumTree
+    beta = 0.4
+    beta_increment_per_sampling = 0.001
+
+    def __init__(self, capacity, alpha):
+        self.e = 0.01
+        self.alpha = alpha
+        self.tree = SumTree(capacity)
+        self.capacity = capacity
+
+    def __len__(self):
+        return self.tree.n_entries
+
+    def _get_priority(self, error):
+        return (np.abs(error) + self.e) ** self.alpha
+
+    def append(self, error: float, sample: Experience):
+        p = self._get_priority(error)
+        self.tree.add(p, sample)
+
+    def sample(self, n: int):
+        batch = []
+        idxes = []
+        segment = self.tree.total() / n
+        priorities = []
+
+        # annealing
+        self.beta = np.min([1., self.beta + self.beta_increment_per_sampling])
+
+        for i in range(n):
+            a = segment * i
+            b = segment * (i + 1)
+
+            random_val = random.uniform(a, b)
+            idx, p, data = self.tree.get(random_val)
+            priorities.append(p)
+            batch.append([data.state, data.action, data.reward, data.done, data.new_state])
+            idxes.append(idx)
+
+        # priority normalization
+        sampling_probabilities = np.array(priorities) / self.tree.total()
+
+        # importance sampling weight
+        is_weight = np.power(self.tree.n_entries * sampling_probabilities, -self.beta)
+        is_weight /= is_weight.max()
+
+        return map(list, zip(*batch)), idxes, is_weight
+
+    def set_priorities(self, indices, errors):
+        for i, e in zip(indices, errors):
+            p = self._get_priority(e)
+            self.tree.update(i, p)
+
+
+# a binary tree data structure where the parent’s value is the sum of its children
+class SumTree(object):
+    def __init__(self, capacity: int):
+        self.write = 0
+        self.capacity = capacity # leaf nodes
+        self.tree = np.zeros(2 * capacity - 1) # tree size
+        self.data = np.zeros(capacity, dtype=Experience) # corresponding data
+        self.n_entries = 0
+
+    def _propagate(self, idx: int, change: float):
+        """
+        propagate change to the whole tree
+        :param idx: index
+        :param change: change
+        :return: None
+        """
+        parent = (idx - 1) // 2
+
+        self.tree[parent] += change
+
+        if parent != 0:
+            self._propagate(parent, change)
+
+    def _retrieve(self, idx: int, val: float):
+        """
+        find sample based on value
+        :param idx: idx of tree
+        :param val: value
+        :return: idx on tree leaf
+        """
+        left = 2 * idx + 1
+        right = left + 1
+
+        if left >= len(self.tree):
+            return idx
+
+        if val <= self.tree[left]:
+            return self._retrieve(left, val)
+        else:
+            return self._retrieve(right, val - self.tree[left])
+
+    # sum of all priorities
+    def total(self):
+        return self.tree[0]
+
+    def add(self, p: float, data: Experience):
+        idx = self.write + self.capacity - 1
+
+        self.data[self.write] = data
+        self.update(idx, p)
+
+        self.write += 1
+        if self.write >= self.capacity:
+            self.write = 0
+
+        if self.n_entries < self.capacity:
+            self.n_entries += 1
+
+    # update priority
+    def update(self, idx: int, p: float):
+        """
+        update priority of certain tree node
+        :param idx: idx on tree
+        :param p: priority
+        :return: None
+        """
+        change = p - self.tree[idx]
+
+        self.tree[idx] = p
+        self._propagate(idx, change)
+
+    # get priority and sample from random value
+    def get(self, random_val: float) -> (int, float, Experience):
+        idx = self._retrieve(0, random_val)
+        data_idx = idx - self.capacity + 1
+
+        return idx, self.tree[idx], self.data[data_idx]
+
+
 def plotActionTrace(action_trace):
     for key in action_trace.keys():
         plt.plot(action_trace[key], label=str(int(key)))
@@ -131,6 +247,7 @@ def plotActionTrace(action_trace):
     plt.legend()
     plt.tight_layout()
     plt.show()
+
 
 def report(model: Model):
     fail_rate = model.calculate_fail_rate()

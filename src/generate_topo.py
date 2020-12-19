@@ -16,6 +16,7 @@ model_file_name = "model\\model.pkl" if pf == "Windows" else "model/model.pkl" #
 jitter = True
 test_env = TestEnv.MaxReservation
 load_model = False
+save_interval = 10
 
 if os.path.exists(topo_file_name) or os.path.exists(model_file_name):
     if load_model:
@@ -36,8 +37,8 @@ if __name__ == "__main__":
         with open(model_file_name, 'wb') as f:  # open file with write-mode
             sfc_list = generate_sfc_list(topo, process_capacity, size=sfc_size, duration=duration, jitter=jitter)
             model = Model(topo=topo, sfc_list=sfc_list)
-            model_string = pickle.dump(model, f)  # serialize and save object
+            pickle.dump(model, f)
     else:
         with open(topo_file_name, 'wb') as f:  # open file with write-mode
-            topo_string = pickle.dump(topo, f)  # serialize and save object
+            pickle.dump(topo, f)
 

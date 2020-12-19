@@ -1,8 +1,11 @@
 from sfcbased.utils import *
 
-def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker, time: int, state: List, test_env: TestEnv):
+
+def deploy_sfc_item(model: Model, sfc_index: int, decision_maker: DecisionMaker, time: int, state: List,
+                    test_env: TestEnv):
     """
     Deploy each sfc
+    :param sfc_index: sfc index
     :param model: model
     :param decision_maker: make decision
     :param time: time
@@ -395,7 +398,7 @@ def state_transition_and_resource_reclaim(model: Model, time: int, test_env: Tes
         if model.sfc_list[index].state == State.Normal:
             assert is_active is True
             active_failed(model, index, test_env)
-            if test_env == TestEnv.NoBackup: # NoBackup don't need to start stand-by instance
+            if test_env == TestEnv.NoBackup:  # NoBackup don't need to start stand-by instance
                 model.sfc_list[index].set_state(time, index, State.Broken, BrokenReason.ActiveDamage)
                 continue
             if standby_start(model, index, test_env):
@@ -411,7 +414,8 @@ def state_transition_and_resource_reclaim(model: Model, time: int, test_env: Tes
 
     # time expired condition
     for index in range(len(model.sfc_list)):
-        if (model.sfc_list[index].state == State.Normal or model.sfc_list[index].state == State.Backup) and model.sfc_list[index].time + model.sfc_list[
+        if (model.sfc_list[index].state == State.Normal or model.sfc_list[index].state == State.Backup) and \
+                model.sfc_list[index].time + model.sfc_list[
             index].TTL < time:
             remove_expired_active(model, index, test_env)
             if test_env != TestEnv.NoBackup:
