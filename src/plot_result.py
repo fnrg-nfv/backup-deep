@@ -12,7 +12,7 @@ from matplotlib.lines import Line2D
 
 path_prefix = "..\\result\\" if pf == "Windows" else "../result/"  # file name
 
-dpi = 100
+dpi = 300
 fontsize = 17
 hvretio = 7.5
 
@@ -23,7 +23,7 @@ def plot_acceptance_rate_between_algorithms_maxR():
     BSO = [0.47676008202323994, 0.4876654042272399, 0.39457735247208936, 0.3543358233192595]
     AboveNet = [0.47622329427980703, 0.46996842474409045, 0.4270145310435931, 0.3010288748755393]
     Integra = [0.4881944444444445, 0.4669103518061716, 0.4333223575897267, 0.27026143790849677]
-    BICS = [0.5595643294758339, 0.5485782810183799, 0.4693946567467028, 0.3015710382513661]
+    BICS = [0.5595643294758339, 0.5630871326635262, 0.4693946567467028, 0.3015710382513661]
 
     plt.ylim(0.75, 2)
 
@@ -36,7 +36,7 @@ def plot_acceptance_rate_between_algorithms_maxR():
     print("acceptance_rate: avg higher than RG: {}, avg higher than BFG: {}, avg higher than NOSD: {}".format(higher_RG,
                                                                                                               higher_BFG,
                                                                                                               higher_NOSD))
-    plt.ylabel('Acceptance Rate/RG', fontsize=fontsize)
+    plt.ylabel('Acceptance Ratio/RG', fontsize=fontsize)
 
     labels = ["Abilene", "ANS", "AboveNet", "Integra", "BICS"]
 
@@ -72,7 +72,7 @@ def plot_throughput_between_algorithms_maxR():
     BSO = [105891, 109145.3, 93238, 81377]
     AboveNet = [103858, 105863.9, 95085, 69707]
     Integra = [106604, 105876.4, 98191, 63350]
-    BICS = [127957, 125447.4, 105947, 67995]
+    BICS = [127957, 129784.6, 105947, 67995]
     plt.ylim(0.75, 2)
     higher_BFG = (Abilene[1] / Abilene[2] + ANS[1] / ANS[2] + AboveNet[1] / AboveNet[2]
                   + Integra[1] / Integra[2] + BICS[1] / BICS[2]) / 5 - 1
@@ -121,7 +121,7 @@ def plot_service_time_between_algorithms_maxR():
     BSO = [7070.879378907696, 7686.74459190949, 6510.699674979215, 5647.944096568549]
     AboveNet = [8522.02231237127, 8374.014029134323, 7947.971236652294, 5247.466649645706]
     Integra = [9728.692357181275, 9570.490522587379, 8917.681929965576, 5477.392653721005]
-    BICS = [10086.318975777484, 10096.73950753092, 8639.516362580329, 5390.118595563634]
+    BICS = [10086.318975777484, 10527.440002621852, 8639.516362580329, 5390.118595563634]
 
     plt.ylim(0.75, 2)
     higher_BFG = (Abilene[1] / Abilene[2] + ANS[1] / ANS[2] + AboveNet[1] / AboveNet[2]
@@ -171,7 +171,7 @@ def plot_total_reward_between_algorithms_maxR():
     BSO = [1541, 1436.6, 1162, 1054]
     AboveNet = [1404, 1410.8, 1295, 916]
     Integra = [1406, 1399.8, 1316, 827]
-    BICS = [1644, 1634.4, 1388, 883]
+    BICS = [1644, 1684.2, 1388, 883]
 
     plt.ylim(0.75, 2)
     higher_BFG = (Abilene[1] / Abilene[2] + ANS[1] / ANS[2] + AboveNet[1] / AboveNet[2]
@@ -522,13 +522,13 @@ def plot_acceptance_rate_between_configs():
     BSO = [0.699429599640426, 0.5727141004096132, 0.5450564672547901, 0.48927261955906465, 0.3816132537780993]
     Integra = [0.5973263582537216, 0.5147366169821552, 0.48677529863686847, 0.4732296532951182, 0.34189013654465067]
     BICS = [0.6709822907091505, 0.6028478648800558, 0.5888755575310769, 0.5426460956242856, 0.46330987488366426]
-    plt.ylabel('Acceptance Rate/NoBackup', fontsize=fontsize)
+    plt.ylabel('Acceptance Ratio/Level 0', fontsize=fontsize)
 
     AboveNet = np.array(AboveNet) / AboveNet[0]
 
     plt.ylim(0, 1.2)
     plt.xlim(0, 5.2)
-    labels = ["NoBackup", "Aggressive", "Normal", "MaxR", "FullyR"]
+    labels = ["Level 0", "Level 1", "Level 2", "Level 3", "Level 4"]
     index = [0.6, 1.6, 2.6, 3.6, 4.6]
     width = 0.4
     plt.bar(index, AboveNet, width, color='#ffffff', lw=1, edgecolor="#132486", hatch="//")
@@ -547,13 +547,13 @@ def plot_throughput_between_configs():
     AboveNet = [153112.2, 124569.8, 118580.4, 106740.6, 85957.8]
     Integra = [137573.2, 117477.6, 112372.0, 106579.0, 78192.0]
     BICS = [161132.2, 140866.8, 136108.6, 125250.6, 107186.2]
-    plt.ylabel('Throughput/NoBackup', fontsize=fontsize)
+    plt.ylabel('Throughput/Level 0', fontsize=fontsize)
 
     AboveNet = np.array(AboveNet) / AboveNet[0]
 
     plt.ylim(0, 1.25)
     plt.xlim(0, 5.2)
-    labels = ["NoBackup", "Aggressive", "Normal", "MaxR", "FullyR"]
+    labels = ["Level 0", "Level 1", "Level 2", "Level 3", "Level 4"]
     index = [0.6, 1.6, 2.6, 3.6, 4.6]
     width = 0.4
     plt.bar(index, AboveNet, width, color='#ffffff', lw=1, edgecolor="#992020", hatch="//")
@@ -573,13 +573,13 @@ def plot_service_time_between_configs():
     AboveNet = [6835.440256333747, 9407.31365279395, 9204.597169421892, 8445.231275786758, 6836.6715336073785]
     Integra = [8489.987265138121, 10096.104548752031, 9913.459418297749, 9333.334116695238, 6966.20434854566]
     BICS = [7587.377662160613, 10661.351412752329, 10666.307790843455, 9898.793860722668, 8775.978207528173]
-    plt.ylabel('Service Availability/NoBackup', fontsize=fontsize)
+    plt.ylabel('Service Availability/Level 0', fontsize=fontsize)
 
     AboveNet = np.array(AboveNet) / AboveNet[0]
 
     plt.ylim(0, 1.6)
     plt.xlim(0, 5.2)
-    labels = ["NoBackup", "Aggressive", "Normal", "MaxR", "FullyR"]
+    labels = ["Level 0", "Level 1", "Level 2", "Level 3", "Level 4"]
     index = [0.6, 1.6, 2.6, 3.6, 4.6]
     width = 0.4
     plt.bar(index, AboveNet, width, color='#ffffff', lw=1, edgecolor="#0d7263", hatch="//")
@@ -598,13 +598,13 @@ def plot_total_reward_between_configs():
     AboveNet = [1975.2, 1636.2, 1567.6, 1416.8, 1134.0]
     Integra = [1764.6, 1527.8, 1462.6, 1394.8, 1025.4]
     BICS = [2039.4, 1797.4, 1751.6, 1617.8, 1394.6]
-    plt.ylabel('Total Reward/NoBackup', fontsize=fontsize)
+    plt.ylabel('Total Reward/Level 0', fontsize=fontsize)
 
     AboveNet = np.array(AboveNet) / AboveNet[0]
 
     plt.ylim(0, 1.25)
     plt.xlim(0, 5.2)
-    labels = ["NoBackup", "Aggressive", "Normal", "MaxR", "FullyR"]
+    labels = ["Level 0", "Level 1", "Level 2", "Level 3", "Level 4"]
     index = [0.6, 1.6, 2.6, 3.6, 4.6]
     width = 0.4
     plt.bar(index, AboveNet, width, color='#ffffff', lw=1, edgecolor="#ef8935", hatch="//")
@@ -629,7 +629,7 @@ def plot_real_fail_rate_between_configs():
 
     plt.ylim(0, 1.1)
     plt.xlim(0, 5.2)
-    labels = ["NoBackup", "Aggressive", "Normal", "MaxR", "FullyR"]
+    labels = ["Level 0", "Level 1", "Level 2", "Level 3", "Level 4"]
     index = [0.6, 1.6, 2.6, 3.6, 4.6]
     width = 0.4
     plt.bar(index, fault_tolerance, width, color='#ffffff', lw=1, edgecolor="#000000", hatch="//")

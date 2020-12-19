@@ -1,10 +1,9 @@
 from tqdm import tqdm
 import os
 from generate_topo import *
-from train_dqn import REPLAY_SIZE, EPSILON, EPSILON_START, EPSILON_FINAL, EPSILON_DECAY, GAMMA, STATE_LEN, ACTION_LEN, ACTION_SPACE, TARGET_FILE
+from train_dqn import REPLAY_SIZE, EPSILON, EPSILON_START, EPSILON_FINAL, EPSILON_DECAY, GAMMA, STATE_LEN, ACTION_LEN, ACTION_SPACE, TARGET_FILE, DEVICE
 
 # parameters with rl
-DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 ITERATIONS = 5
 
 # create decision maker(agent) & optimizer & environment
