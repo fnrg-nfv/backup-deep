@@ -5,6 +5,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/sfcbased" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/vnfbased" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/result" />
+      <excludeFolder url="file://$MODULE_DIR$/src/model" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.7" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

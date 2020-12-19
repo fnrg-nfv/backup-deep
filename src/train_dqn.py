@@ -25,7 +25,7 @@ EPSILON = 0.0
 EPSILON_START = 1.0
 EPSILON_FINAL = 0.3
 EPSILON_DECAY = 50
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-5
 SYNC_INTERVAL = 500
 TRAIN_INTERVAL = 1
 ACTION_SPACE = generate_action_space(size=topo_size)
@@ -33,7 +33,7 @@ ACTION_LEN = len(ACTION_SPACE)
 DEVICE = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 DEVICE = torch.device("cpu")
 ITERATIONS = 10000
-DOUBLE = True
+DOUBLE = False
 TEST = True
 
 if load_model:
@@ -77,6 +77,10 @@ if __name__ == "__main__":
         if os.path.exists(TRACE_FILE):
             with open(TRACE_FILE, 'rb') as f:
                 reward_trace = pickle.load(f)  # read file and build object
+
+                # iteration control
+                if len(reward_trace) > 1200:
+                    break
         else:
             reward_trace = []
 

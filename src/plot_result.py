@@ -13,11 +13,11 @@ from matplotlib.lines import Line2D
 path_prefix = "..\\result\\" if pf == "Windows" else "../result/"  # file name
 
 dpi = 100
-fontsize = 14
+fontsize = 17
 hvretio = 7.5
 
 
-def plot_acceptance_rate_between_algorithms():
+def plot_acceptance_rate_between_algorithms_maxR():
     Abilene = [0.4320987654320988, 0.4752908229578495, 0.39800332778702163, 0.3138806462248599]
     ANS = [0.4923941798941799, 0.5054905479205356, 0.40666439986399183, 0.3404401650618982]
     BSO = [0.47676008202323994, 0.4876654042272399, 0.39457735247208936, 0.3543358233192595]
@@ -66,7 +66,7 @@ def plot_acceptance_rate_between_algorithms():
     plt.show()
 
 
-def plot_throughput_between_algorithms():
+def plot_throughput_between_algorithms_maxR():
     Abilene = [97105, 105089.0, 88819, 69440]
     ANS = [109368, 113281.9, 91110, 74558]
     BSO = [105891, 109145.3, 93238, 81377]
@@ -115,7 +115,7 @@ def plot_throughput_between_algorithms():
     plt.show()
 
 
-def plot_service_time_between_algorithms():
+def plot_service_time_between_algorithms_maxR():
     Abilene = [8343.173427926175, 9235.226813703895, 7461.389462078978, 5774.5096932811175]
     ANS = [9464.014045222082, 9903.124539080174, 7727.514574224005, 6204.83386892512]
     BSO = [7070.879378907696, 7686.74459190949, 6510.699674979215, 5647.944096568549]
@@ -165,7 +165,7 @@ def plot_service_time_between_algorithms():
     plt.show()
 
 
-def plot_total_reward_between_algorithms():
+def plot_total_reward_between_algorithms_maxR():
     Abilene = [1295, 1429.6, 1196, 952]
     ANS = [1435, 1505.8, 1183, 1039]
     BSO = [1541, 1436.6, 1162, 1054]
@@ -216,7 +216,7 @@ def plot_total_reward_between_algorithms():
     plt.show()
 
 
-def plot_running_time_cost_between_algorithms():
+def plot_running_time_cost_between_algorithms_maxR():
     Abilene = np.array([53.0, 3.0, 52.0, 10.0]) / 3
     ANS = np.array([184.0, 4.0, 176.0, 18.0]) / 3
     BSO = np.array([202.0, 4.0, 193.0, 20.0]) / 3
@@ -277,6 +277,154 @@ def plot_running_time_cost_between_algorithms():
     plt.show()
 
 
+def plot_acceptance_rate_between_algorithms_fullyR():
+    Abilene = [0.32953435363073913, 0.4120211363917784, 0.2691946098401755, 0.24703087885985753]
+    ANS = [0.41555407209612816, 0.4156704913455801, 0.34046164290563474, 0.2490272373540856]
+    AboveNet = [0.40451388888888884, 0.43808298318397065, 0.32258064516129037, 0.23141361256544501]
+    Integra = [0.420984872867718, 0.41459047809328115, 0.3149726110772977, 0.21381234740146493]
+    BICS = [0.4598199399799934, 0.46334552697671577, 0.3089022757697456, 0.23704446673353397]
+
+    plt.ylim(0.75, 2.3)
+
+    higher_BFG = (Abilene[1] / Abilene[2] + ANS[1] / ANS[2] + AboveNet[1] / AboveNet[2]
+                  + Integra[1] / Integra[2] + BICS[1] / BICS[2]) / 5 - 1
+    higher_RG = (Abilene[1] / Abilene[3] + ANS[1] / ANS[3] + AboveNet[1] / AboveNet[3]
+                 + Integra[1] / Integra[3] + BICS[1] / BICS[3]) / 5 - 1
+    higher_NOSD = (Abilene[1] / Abilene[0] + ANS[1] / ANS[0] + AboveNet[1] / AboveNet[0]
+                   + Integra[1] / Integra[0] + BICS[1] / BICS[0]) / 5 - 1
+    print("acceptance_rate: avg higher than RG: {}, avg higher than BFG: {}, avg higher than NOSD: {}".format(higher_RG,
+                                                                                                              higher_BFG,
+                                                                                                              higher_NOSD))
+    plt.ylabel('Acceptance Ratio/RG', fontsize=fontsize)
+
+    labels = ["Abilene", "ANS", "AboveNet", "Integra", "BICS"]
+
+    bfg_index = [0.4, 1.4, 2.4, 3.4, 4.4]
+    nosd_index = [0.6, 1.6, 2.6, 3.6, 4.6]
+    ddqp_index = [0.8, 1.8, 2.8, 3.8, 4.8]
+    plt.xlim(0, 5.2)
+
+    label_index = [0.6, 1.6, 2.6, 3.6, 4.6]
+    width = 0.16
+
+    plt.bar(bfg_index, [Abilene[2] / Abilene[3], ANS[2] / ANS[3], AboveNet[2] / AboveNet[3], Integra[2] / Integra[3],
+                        BICS[2] / BICS[3]], width, color="#0d7263", label="BFG",
+            lw=1, edgecolor="black")
+    plt.bar(nosd_index, [Abilene[0] / Abilene[3], ANS[0] / ANS[3], AboveNet[0] / AboveNet[3], Integra[0] / Integra[3],
+                         BICS[0] / BICS[3]], width, color='#ef8935', label="NOSD",
+            lw=1, edgecolor="black")
+    plt.bar(ddqp_index, [Abilene[1] / Abilene[3], ANS[1] / ANS[3], AboveNet[1] / AboveNet[3], Integra[1] / Integra[3],
+                         BICS[1] / BICS[3]], width, color='#992020', label="DDQP",
+            lw=1, edgecolor="black")
+    plt.hlines(1.0, 0, 5.2, colors="#132486", lw=2, linestyles="--")
+
+    plt.xticks(label_index, labels=labels, fontsize=fontsize)
+    plt.grid(color='grey', linestyle='--', linewidth=1, alpha=0.5)
+    plt.legend(fontsize=15)
+
+    fig = matplotlib.pyplot.gcf()
+    fig.set_size_inches(hvretio, 5)
+    fig.savefig(path_prefix + 'acceptance_fullyR.png', dpi=dpi)
+    plt.show()
+
+
+def plot_throughput_between_algorithms_fullyR():
+    Abilene = [75973, 91921.0, 64225, 55421]
+    ANS = [94523, 96024.8, 76112, 57891]
+    AboveNet = [88544, 100216.0, 73527, 49485]
+    Integra = [99089, 96543.0, 79657, 47086]
+    BICS = [104992, 108964.8, 69124, 55488]
+    plt.ylim(0.75, 2.3)
+    higher_BFG = (Abilene[1] / Abilene[2] + ANS[1] / ANS[2] + AboveNet[1] / AboveNet[2]
+                  + Integra[1] / Integra[2] + BICS[1] / BICS[2]) / 5 - 1
+    higher_RG = (Abilene[1] / Abilene[3] + ANS[1] / ANS[3] + AboveNet[1] / AboveNet[3]
+                 + Integra[1] / Integra[3] + BICS[1] / BICS[3]) / 5 - 1
+    higher_NOSD = (Abilene[1] / Abilene[0] + ANS[1] / ANS[0] + AboveNet[1] / AboveNet[0]
+                   + Integra[1] / Integra[0] + BICS[1] / BICS[0]) / 5 - 1
+
+    print("throughput: avg higher than RG: {}, avg higher than BFG: {}, avg higher than NOSD: {}".format(higher_RG,
+                                                                                                         higher_BFG,
+                                                                                                         higher_NOSD))
+
+    plt.ylabel('Throughput/RG', fontsize=fontsize)
+
+    labels = ["Abilene", "ANS", "AboveNet", "Integra", "BICS"]
+
+    bfg_index = [0.4, 1.4, 2.4, 3.4, 4.4]
+    nosd_index = [0.6, 1.6, 2.6, 3.6, 4.6]
+    ddqp_index = [0.8, 1.8, 2.8, 3.8, 4.8]
+    plt.xlim(0, 5.2)
+
+    label_index = [0.6, 1.6, 2.6, 3.6, 4.6]
+    width = 0.16
+
+    plt.bar(bfg_index, [Abilene[2] / Abilene[3], ANS[2] / ANS[3], AboveNet[2] / AboveNet[3], Integra[2] / Integra[3], BICS[2] / BICS[3]], width, color="#0d7263", label="BFG",
+            lw=1, edgecolor="black")
+    plt.bar(nosd_index, [Abilene[0] / Abilene[3], ANS[0] / ANS[3], AboveNet[0] / AboveNet[3], Integra[0] / Integra[3], BICS[0] / BICS[3]], width, color='#ef8935', label="NOSD",
+            lw=1, edgecolor="black")
+    plt.bar(ddqp_index, [Abilene[1] / Abilene[3], ANS[1] / ANS[3], AboveNet[1] / AboveNet[3], Integra[1] / Integra[3], BICS[1] / BICS[3]], width, color='#992020', label="DDQP",
+            lw=1, edgecolor="black")
+    plt.hlines(1.0, 0, 5.2, colors="#132486", lw = 2, linestyles="--")
+
+    plt.xticks(label_index, labels=labels, fontsize=fontsize)
+    plt.grid(color='grey', linestyle='--', linewidth=1, alpha=0.5)
+    plt.legend(fontsize=15)
+
+    fig = matplotlib.pyplot.gcf()
+    fig.set_size_inches(hvretio, 5)
+    fig.savefig(path_prefix + 'throughput_fullyR.png', dpi=dpi)
+    plt.show()
+
+
+def plot_service_time_between_algorithms_fullyR():
+    Abilene = [7000.0711106577255, 7962.220602190125, 5595.594550928978, 4818.39819609156]
+    ANS = [7433.091083300897, 7768.904875420558, 5687.070804915307, 4481.066967663348]
+    AboveNet = [7392.873589857572, 8195.997124407786, 6132.14307051629, 4143.766075688942]
+    Integra = [7666.672815289057, 7558.4894244353445, 6184.899735212819, 3559.758979321726]
+    BICS = [8922.489782522858, 8860.38595034129, 6015.6254632651935, 4380.405159992824]
+
+    plt.ylim(0.75, 2.3)
+    higher_BFG = (Abilene[1] / Abilene[2] + ANS[1] / ANS[2] + AboveNet[1] / AboveNet[2]
+                  + Integra[1] / Integra[2] + BICS[1] / BICS[2]) / 5 - 1
+    higher_RG = (Abilene[1] / Abilene[3] + ANS[1] / ANS[3] + AboveNet[1] / AboveNet[3]
+                 + Integra[1] / Integra[3] + BICS[1] / BICS[3]) / 5 - 1
+    higher_NOSD = (Abilene[1] / Abilene[0] + ANS[1] / ANS[0] + AboveNet[1] / AboveNet[0]
+                   + Integra[1] / Integra[0] + BICS[1] / BICS[0]) / 5 - 1
+
+    print("service_time: avg higher than RG: {}, avg higher than BFG: {}, avg higher than NOSD: {}".format(higher_RG,
+                                                                                                           higher_BFG,
+                                                                                                           higher_NOSD))
+
+    plt.ylabel('Service Availability/RG', fontsize=fontsize)
+
+    labels = ["Abilene", "ANS", "AboveNet", "Integra", "BICS"]
+
+    bfg_index = [0.4, 1.4, 2.4, 3.4, 4.4]
+    nosd_index = [0.6, 1.6, 2.6, 3.6, 4.6]
+    ddqp_index = [0.8, 1.8, 2.8, 3.8, 4.8]
+    plt.xlim(0, 5.2)
+
+    label_index = [0.6, 1.6, 2.6, 3.6, 4.6]
+    width = 0.16
+
+    plt.bar(bfg_index, [Abilene[2] / Abilene[3], ANS[2] / ANS[3], AboveNet[2] / AboveNet[3], Integra[2] / Integra[3], BICS[2] / BICS[3]], width, color="#0d7263", label="BFG",
+            lw=1, edgecolor="black")
+    plt.bar(nosd_index, [Abilene[0] / Abilene[3], ANS[0] / ANS[3], AboveNet[0] / AboveNet[3], Integra[0] / Integra[3], BICS[0] / BICS[3]], width, color='#ef8935', label="NOSD",
+            lw=1, edgecolor="black")
+    plt.bar(ddqp_index, [Abilene[1] / Abilene[3], ANS[1] / ANS[3], AboveNet[1] / AboveNet[3], Integra[1] / Integra[3], BICS[1] / BICS[3]], width, color='#992020', label="DDQP",
+            lw=1, edgecolor="black")
+    plt.hlines(1.0, 0, 5.2, colors="#132486", lw = 2, linestyles="--")
+
+    plt.xticks(label_index, labels=labels, fontsize=fontsize)
+    plt.grid(color='grey', linestyle='--', linewidth=1, alpha=0.5)
+    plt.legend(fontsize=15)
+
+    fig = matplotlib.pyplot.gcf()
+    fig.set_size_inches(hvretio, 5)
+    fig.savefig(path_prefix + 'service_fullyR.png', dpi=dpi)
+    plt.show()
+
+
 def plot_reward_trace():
     window_size = 3
     if pf == "Windows":
@@ -286,6 +434,7 @@ def plot_reward_trace():
     with open(TRACE_FILE, 'rb') as f:
         reward_trace = pickle.load(f)  # read file and build object
         index_len = len(reward_trace)
+        print("reward trace length: ", index_len)
         for i in range(index_len):
             if i >= window_size and index_len - i > window_size:
                 sum = 0
@@ -495,14 +644,14 @@ def plot_real_fail_rate_between_configs():
 
 if __name__ == "__main__":
     fig = plt.figure()
-    plot_acceptance_rate_between_algorithms()
-    plot_throughput_between_algorithms()
-    plot_service_time_between_algorithms()
-    plot_total_reward_between_algorithms()
-    plot_running_time_cost_between_algorithms()
-    # plot_reward_trace()
-    plot_acceptance_rate_between_configs()
-    plot_real_fail_rate_between_configs()
-    plot_service_time_between_configs()
-    plot_total_reward_between_configs()
-    plot_throughput_between_configs()
+    # plot_acceptance_rate_between_algorithms_fullyR()
+    # plot_throughput_between_algorithms_fullyR()
+    # plot_service_time_between_algorithms_fullyR()
+    # plot_total_reward_between_algorithms_maxR()
+    # plot_running_time_cost_between_algorithms_maxR()
+    plot_reward_trace()
+    # plot_acceptance_rate_between_configs()
+    # plot_real_fail_rate_between_configs()
+    # plot_service_time_between_configs()
+    # plot_total_reward_between_configs()
+    # plot_throughput_between_configs()

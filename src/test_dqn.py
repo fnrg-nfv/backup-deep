@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
         # Monitor.print_log()
         # model.print_start_and_down()
-        plot_action_distribution(action_list, num_nodes=topo_size)
+        # plot_action_distribution(action_list, num_nodes=topo_size)
 
         fail_rate, real_fail_rate, throughput, service_time, total_reward, accept_rate = report(model)
         fail_rates.append(fail_rate)
