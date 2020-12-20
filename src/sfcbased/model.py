@@ -179,6 +179,7 @@ class Monitor(BaseObject):
             return 0
         return fail_num / (fail_num + success_num)
 
+
 class Instance(BaseObject):
     """
     This class is denoted as an instance.
@@ -440,6 +441,20 @@ class Model(BaseObject):
             link_rate.append(link)
         return link_rate
 
+
+path_database = dict()
+
+
+def all_shortest_paths(topo: nx.Graph, src: int, dst: int):
+    global path_database
+    if (src, dst) in path_database:
+        return path_database[(src, dst)]
+    else:
+        paths = list(nx.all_shortest_paths(topo, src, dst))
+        path_database[(src, dst)] = paths
+        return paths
+
+
 class DecisionMaker(BaseObject):
     """
     The class used to make deploy decision
@@ -518,9 +533,9 @@ class DecisionMaker(BaseObject):
 
         # principle 2
         remain_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].process_latency
-        for path_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
+        for path_s2c in all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
             if self.is_path_throughput_met(model, path_s2c, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
-                for path_c2d in nx.all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
+                for path_c2d in all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
                     if self.is_path_latency_met(model, path_s2c, path_c2d,
                                                 remain_latency) and self.is_path_throughput_met(
                         model, path_c2d, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
@@ -560,7 +575,7 @@ class DecisionMaker(BaseObject):
 
         # principle 2
         principle2 = False
-        for path in nx.all_shortest_paths(model.topo, active_server_index, cur_server_index):
+        for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
                                            test_env):
                 principle2 = True
@@ -569,10 +584,10 @@ class DecisionMaker(BaseObject):
             return False
 
         # principle 3
-        for path_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
+        for path_s2c in all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
             if self.is_path_throughput_met(model, path_s2c, model.sfc_list[cur_sfc_index].tp, SFCType.Standby,
                                            test_env):
-                for path_c2d in nx.all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
+                for path_c2d in all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
                     if self.is_path_latency_met(model, path_s2c, path_c2d,
                                                 model.sfc_list[cur_sfc_index].latency - model.sfc_list[
                                                     cur_sfc_index].process_latency) and self.is_path_throughput_met(
@@ -690,7 +705,8 @@ class DecisionMaker(BaseObject):
                             total[item] = 0
                         total[item] += standby[item]
                     for item in total:
-                        if model.topo.edges[item]["active"] + total[item] + model.topo.edges[item]["reserved"] > model.topo.edges[item[0], item[1]]["bandwidth"]:
+                        if model.topo.edges[item]["active"] + total[item] + model.topo.edges[item]["reserved"] > \
+                                model.topo.edges[item[0], item[1]]["bandwidth"]:
                             return False
                     return True
 
@@ -698,21 +714,26 @@ class DecisionMaker(BaseObject):
                     for i in range(1, len(standby_s2c)):
                         if (standby_s2c[i - 1], standby_s2c[i]) not in standby.keys():
                             standby[standby_s2c[i - 1], standby_s2c[i]] = 0
-                        standby[standby_s2c[i - 1], standby_s2c[i]] = max(model.sfc_list[cur_sfc_index].tp, standby[standby_s2c[i - 1], standby_s2c[i]])
+                        standby[standby_s2c[i - 1], standby_s2c[i]] = max(model.sfc_list[cur_sfc_index].tp,
+                                                                          standby[standby_s2c[i - 1], standby_s2c[i]])
                     for i in range(1, len(standby_c2d)):
                         if (standby_c2d[i - 1], standby_c2d[i]) not in standby.keys():
                             standby[standby_c2d[i - 1], standby_c2d[i]] = 0
-                        standby[standby_c2d[i - 1], standby_c2d[i]] = max(model.sfc_list[cur_sfc_index].tp, standby[standby_c2d[i - 1], standby_c2d[i]])
+                        standby[standby_c2d[i - 1], standby_c2d[i]] = max(model.sfc_list[cur_sfc_index].tp,
+                                                                          standby[standby_c2d[i - 1], standby_c2d[i]])
                     for item in active:
                         if item not in standby.keys():
                             standby[item] = 0
-                        if model.topo.edges[item]["active"] + active[item] + max(model.topo.edges[item]["reserved"], standby[item]) > model.topo.edges[item[0], item[1]]["bandwidth"]:
+                        if model.topo.edges[item]["active"] + active[item] + max(model.topo.edges[item]["reserved"],
+                                                                                 standby[item]) > \
+                                model.topo.edges[item[0], item[1]]["bandwidth"]:
                             return False
                     return True
                 return True
             else:
                 for item in active:
-                    if model.topo.edges[item[0], item[1]]["active"] + active[item] > model.topo.edges[item[0], item[1]]["bandwidth"]:
+                    if model.topo.edges[item[0], item[1]]["active"] + active[item] > model.topo.edges[item[0], item[1]][
+                        "bandwidth"]:
                         return False
                 return True
 
@@ -775,12 +796,12 @@ class DecisionMaker(BaseObject):
         if test_env == TestEnv.NoBackup:
             flag = True
             active_paths = []
-            temp_active_s2c = next(nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index))
-            temp_active_c2d = next(nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d))
-            for active_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
+            temp_active_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index)[0]
+            temp_active_c2d = all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d)[0]
+            for active_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
                 if self.is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active,
                                                test_env):
-                    for active_c2d in nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
+                    for active_c2d in all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
                         if self.is_path_latency_met(model, active_s2c, active_c2d,
                                                     model.sfc_list[sfc_index].latency - model.sfc_list[
                                                         sfc_index].process_latency) and self.is_path_throughput_met(
@@ -800,11 +821,11 @@ class DecisionMaker(BaseObject):
         # calculate paths for active instance
         flag = True
         active_paths = []
-        temp_active_s2c = next(nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index))
-        temp_active_c2d = next(nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d))
-        for active_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
+        temp_active_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index)[0]
+        temp_active_c2d = all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d)[0]
+        for active_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
             if self.is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
-                for active_c2d in nx.all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
+                for active_c2d in all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
                     if self.is_path_latency_met(model, active_s2c, active_c2d,
                                                 model.sfc_list[sfc_index].latency - model.sfc_list[
                                                     sfc_index].process_latency) and self.is_path_throughput_met(
@@ -819,12 +840,12 @@ class DecisionMaker(BaseObject):
 
         # calculate paths for stand-by instance
         standby_paths = []
-        temp_standby_s2c = next(nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index))
-        temp_standby_c2d = next(nx.all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d))
+        temp_standby_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index)[0]
+        temp_standby_c2d = all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d)[0]
 
-        for standby_s2c in nx.all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index):
+        for standby_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index):
             if self.is_path_throughput_met(model, standby_s2c, model.sfc_list[sfc_index].tp, SFCType.Standby, test_env):
-                for standby_c2d in nx.all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d):
+                for standby_c2d in all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d):
                     if self.is_path_latency_met(model, standby_s2c, standby_c2d,
                                                 model.sfc_list[sfc_index].latency - model.sfc_list[
                                                     sfc_index].process_latency) and self.is_path_throughput_met(
@@ -841,8 +862,8 @@ class DecisionMaker(BaseObject):
 
         # calculate paths for updating
         update_paths = []
-        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
-        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+        temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
+        for path in all_shortest_paths(model.topo, active_index, standby_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
@@ -892,7 +913,7 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
                 return False
 
         # principle 2
-        for path in nx.all_shortest_paths(model.topo, active_server_index, cur_server_index):
+        for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
                                            test_env):
                 return True
@@ -952,7 +973,8 @@ class ICCDecisionMakerWithStrongGuarantee(DecisionMaker):
         decision = random.sample(decisions, 1)[0]
         return decision
 
-    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int,
+                                  test_env: TestEnv):
         """
         select paths for determined active instance server index and stand-by instance server index
         :param model: model
@@ -968,8 +990,8 @@ class ICCDecisionMakerWithStrongGuarantee(DecisionMaker):
 
         # calculate paths for updating
         update_paths = []
-        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
-        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+        temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
+        for path in all_shortest_paths(model.topo, active_index, standby_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
@@ -977,7 +999,8 @@ class ICCDecisionMakerWithStrongGuarantee(DecisionMaker):
         update_path = self.select_path(update_paths, False)
         return update_path
 
-    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int, test_env: TestEnv):
+    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int,
+                       test_env: TestEnv):
         """
         Used to narrow available decision set
         :param test_env:
@@ -985,7 +1008,12 @@ class ICCDecisionMakerWithStrongGuarantee(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index, test_env) and self.verify_standby(model, cur_sfc_index, cur_active_index, cur_standby_index, test_env):
+        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index,
+                                                                        test_env) and self.verify_standby(model,
+                                                                                                          cur_sfc_index,
+                                                                                                          cur_active_index,
+                                                                                                          cur_standby_index,
+                                                                                                          test_env):
             return True
         return False
 
@@ -1008,7 +1036,7 @@ class ICCDecisionMakerWithStrongGuarantee(DecisionMaker):
                 decisions.append(decision)
 
         decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'] -
-                                                         model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+                                                     model.topo.nodes[x.active_server]['active'], len(x.update_path)))
 
         for decision in decisions:
             if decision.flag:
@@ -1031,7 +1059,8 @@ class WorstDecisionMakerWithStrongGuarantee(DecisionMaker):
         decision = random.sample(decisions, 1)[0]
         return decision
 
-    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int,
+                                  test_env: TestEnv):
         """
         select paths for determined active instance server index and stand-by instance server index
         :param model: model
@@ -1047,8 +1076,8 @@ class WorstDecisionMakerWithStrongGuarantee(DecisionMaker):
 
         # calculate paths for updating
         update_paths = []
-        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
-        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+        temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
+        for path in all_shortest_paths(model.topo, active_index, standby_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
@@ -1056,7 +1085,8 @@ class WorstDecisionMakerWithStrongGuarantee(DecisionMaker):
         update_path = self.select_path(update_paths, False)
         return update_path
 
-    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int, test_env: TestEnv):
+    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int,
+                       test_env: TestEnv):
         """
         Used to narrow available decision set
         :param test_env:
@@ -1064,7 +1094,12 @@ class WorstDecisionMakerWithStrongGuarantee(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index, test_env) and self.verify_standby(model, cur_sfc_index, cur_active_index, cur_standby_index, test_env):
+        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index,
+                                                                        test_env) and self.verify_standby(model,
+                                                                                                          cur_sfc_index,
+                                                                                                          cur_active_index,
+                                                                                                          cur_standby_index,
+                                                                                                          test_env):
             return True
         return False
 
@@ -1086,8 +1121,8 @@ class WorstDecisionMakerWithStrongGuarantee(DecisionMaker):
                 decision.update_path = self.select_paths_for_updating(model, cur_sfc_index, i, j, test_env)
                 decisions.append(decision)
 
-        decisions = sorted(decisions, key=lambda x: ( - model.topo.nodes[x.active_server]['computing_resource'] +
-                                                         model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+        decisions = sorted(decisions, key=lambda x: (- model.topo.nodes[x.active_server]['computing_resource'] +
+                                                     model.topo.nodes[x.active_server]['active'], len(x.update_path)))
 
         for decision in decisions:
             if decision.flag:
@@ -1215,7 +1250,7 @@ class ICCheuristic(DecisionMaker):
                 return False
 
         # principle 2
-        for path in nx.all_shortest_paths(model.topo, active_server_index, cur_server_index):
+        for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
                                            test_env):
                 return True
@@ -1226,7 +1261,8 @@ class ICCheuristic(DecisionMaker):
         decision = random.sample(decisions, 1)[0]
         return decision
 
-    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int,
+                                  test_env: TestEnv):
         """
         select paths for determined active instance server index and stand-by instance server index
         :param model: model
@@ -1242,8 +1278,8 @@ class ICCheuristic(DecisionMaker):
 
         # calculate paths for updating
         update_paths = []
-        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
-        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+        temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
+        for path in all_shortest_paths(model.topo, active_index, standby_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
@@ -1251,7 +1287,8 @@ class ICCheuristic(DecisionMaker):
         update_path = self.select_path(update_paths, False)
         return update_path
 
-    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int, test_env: TestEnv):
+    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int,
+                       test_env: TestEnv):
         """
         Used to narrow available decision set
         :param test_env:
@@ -1259,7 +1296,12 @@ class ICCheuristic(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index, test_env) and self.verify_standby(model, cur_sfc_index, cur_active_index, cur_standby_index, test_env):
+        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index,
+                                                                        test_env) and self.verify_standby(model,
+                                                                                                          cur_sfc_index,
+                                                                                                          cur_active_index,
+                                                                                                          cur_standby_index,
+                                                                                                          test_env):
             return True
         return False
 
@@ -1282,7 +1324,7 @@ class ICCheuristic(DecisionMaker):
                 decisions.append(decision)
 
         decisions = sorted(decisions, key=lambda x: (model.topo.nodes[x.active_server]['computing_resource'] -
-                                                         model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+                                                     model.topo.nodes[x.active_server]['active'], len(x.update_path)))
 
         for decision in decisions:
             if decision.flag:
@@ -1291,6 +1333,7 @@ class ICCheuristic(DecisionMaker):
         decision.active_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         decision.standby_server = random.sample(range(len(model.topo.nodes)), 1)[0]
         return decision
+
 
 class Worst(DecisionMaker):
     """
@@ -1331,7 +1374,7 @@ class Worst(DecisionMaker):
                 return False
 
         # principle 2
-        for path in nx.all_shortest_paths(model.topo, active_server_index, cur_server_index):
+        for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
                                            test_env):
                 return True
@@ -1342,8 +1385,8 @@ class Worst(DecisionMaker):
         decision = random.sample(decisions, 1)[0]
         return decision
 
-
-    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+    def select_paths_for_updating(self, model: Model, sfc_index: int, active_index: int, standby_index: int,
+                                  test_env: TestEnv):
         """
         select paths for determined active instance server index and stand-by instance server index
         :param model: model
@@ -1359,8 +1402,8 @@ class Worst(DecisionMaker):
 
         # calculate paths for updating
         update_paths = []
-        temp_update = next(nx.all_shortest_paths(model.topo, active_index, standby_index))
-        for path in nx.all_shortest_paths(model.topo, active_index, standby_index):
+        temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
+        for path in all_shortest_paths(model.topo, active_index, standby_index):
             if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
@@ -1368,7 +1411,8 @@ class Worst(DecisionMaker):
         update_path = self.select_path(update_paths, False)
         return update_path
 
-    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int, test_env: TestEnv):
+    def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int,
+                       test_env: TestEnv):
         """
         Used to narrow available decision set
         :param test_env:
@@ -1376,7 +1420,12 @@ class Worst(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index, test_env) and self.verify_standby(model, cur_sfc_index, cur_active_index, cur_standby_index, test_env):
+        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index,
+                                                                        test_env) and self.verify_standby(model,
+                                                                                                          cur_sfc_index,
+                                                                                                          cur_active_index,
+                                                                                                          cur_standby_index,
+                                                                                                          test_env):
             return True
         return False
 
@@ -1398,8 +1447,8 @@ class Worst(DecisionMaker):
                 decision.update_path = self.select_paths_for_updating(model, cur_sfc_index, i, j, test_env)
                 decisions.append(decision)
 
-        decisions = sorted(decisions, key=lambda x: ( - model.topo.nodes[x.active_server]['computing_resource'] +
-                                                         model.topo.nodes[x.active_server]['active'], len(x.update_path)))
+        decisions = sorted(decisions, key=lambda x: (- model.topo.nodes[x.active_server]['computing_resource'] +
+                                                     model.topo.nodes[x.active_server]['active'], len(x.update_path)))
 
         for decision in decisions:
             if decision.flag:
