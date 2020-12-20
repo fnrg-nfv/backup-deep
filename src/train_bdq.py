@@ -23,8 +23,8 @@ ACTION_SHAPE = 2
 REPLAY_SIZE = 10000
 EPSILON = 0.0
 EPSILON_START = 1.0
-EPSILON_FINAL = 0.3
-EPSILON_DECAY = 50
+EPSILON_FINAL = 0.1
+EPSILON_DECAY = 50000
 LEARNING_RATE = 1e-3
 SYNC_INTERVAL = 500
 TRAIN_INTERVAL = 1
@@ -128,6 +128,9 @@ if __name__ == "__main__":
                         loss_t.backward()
                         # print(decision_maker.net.fc7.weight.data)
                         optimizer.step()
+
+        total_reward = model.calculate_total_reward()
+        reward_trace.append(total_reward)
 
         if it % save_interval == 0:
             torch.save(decision_maker.net, SAMPLE_FILE)
