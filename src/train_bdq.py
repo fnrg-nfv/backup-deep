@@ -52,8 +52,8 @@ if LEARNING_FROM_LAST:
     with open(EXP_REPLAY_FILE, 'rb') as f:
         buffer = pickle.load(f)  # read file and build object
 else:
-    net = BranchingQNetwork(state_len=STATE_LEN, dimensions=2, actions_per_dimension=len(model.topo.nodes() if load_model else topo.nodes()), is_tgt=False, is_fc=True,  device=DEVICE)
-    tgt_net = BranchingQNetwork(state_len=STATE_LEN, dimensions=2, actions_per_dimension=len(model.topo.nodes() if load_model else topo.nodes()),
+    net = BranchingQNetwork(state_len=STATE_LEN, dimensions=1, actions_per_dimension=len(model.topo.nodes() if load_model else topo.nodes()), is_tgt=False, is_fc=True,  device=DEVICE)
+    tgt_net = BranchingQNetwork(state_len=STATE_LEN, dimensions=1, actions_per_dimension=len(model.topo.nodes() if load_model else topo.nodes()),
                             is_tgt=True, is_fc=True, device=DEVICE)
     for target_param, param in zip(tgt_net.parameters(), net.parameters()):
         target_param.data.copy_(param.data)

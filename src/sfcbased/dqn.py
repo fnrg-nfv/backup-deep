@@ -281,7 +281,7 @@ class BranchingQNetwork(nn.Module):
 
 
 class BranchingDecisionMaker(DecisionMaker):
-    def __init__(self, net: DQN, tgt_net: DQN, buffer, gamma: float,
+    def __init__(self, net: BranchingQNetwork, tgt_net: BranchingQNetwork, buffer, gamma: float,
                  epsilon_start: float, epsilon: float, epsilon_final: float, epsilon_decay: float, model: Model,
                  device: torch.device = torch.device("cpu")):
         super().__init__()
@@ -324,38 +324,44 @@ class BranchingDecisionMaker(DecisionMaker):
         :param test_env: test environment
         :return: Decision decision
         """
-        if self.net.is_tgt: # when target DQN is running
-            state_a = np.array([state], copy=False)  # make state vector become a state matrix
-            state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
+        if self.net.is_tgt:
+            state_a = np.array([state], copy=False)
+            state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)
             self.net.eval()
-            q_vals_v = self.net(state_v).squeeze(0)  # input to network, and get output
+            q_vals_v = self.net(state_v).squeeze(0)
             action = torch.argmax(q_vals_v, dim=1)
-            if action[0] == action[1]:
-                q_vals_v[1][action[1]] = float("-inf")
-                action = torch.argmax(q_vals_v, dim=1)
-            assert action[0] != action[1]
+            # if action[0] == action[1]:
+            #     q_vals_v[1][action[1]] = float("-inf")
+            #     action = torch.argmax(q_vals_v, dim=1)
+            # assert action[0] != action[1]
             action = action.tolist()
-        else: # when sample DQN is running
+        else:
             if np.random.random() < self.epsilon:
-                action = [0, 0]
-                action[0] = random.randint(0, self.net.actions_per_dimension - 1)
-                action[1] = random.randint(0, self.net.actions_per_dimension - 1)
-                while action[0] == action[1]:
-                    action[1] = random.randint(0, self.net.actions_per_dimension - 1)
+                # action = [0, 0]
+                # action[0] = random.randint(0, self.net.actions_per_dimension - 1)
+                # action[1] = random.randint(0, self.net.actions_per_dimension - 1)
+                # while action[0] == action[1]:
+                #     action[1] = random.randint(0, self.net.actions_per_dimension - 1)
+                action = [random.randint(0, self.net.actions_per_dimension - 1)]
             else:
                 state_a = np.array([state], copy=False)  # make state vector become a state matrix
                 state_v = torch.tensor(state_a, dtype=torch.float, device=self.device)  # transfer to tensor class
                 self.net.eval()
                 q_vals_v = self.net(state_v).squeeze(0)  # input to network, and get output
                 action = torch.argmax(q_vals_v, dim=1)
-                if action[0] == action[1]:
-                    q_vals_v[1][action[1]] = float("-inf")
-                    action = torch.argmax(q_vals_v, dim=1)
-                assert action[0] != action[1]
+                # if action[0] == action[1]:
+                #     q_vals_v[1][action[1]] = float("-inf")
+                #     action = torch.argmax(q_vals_v, dim=1)
+                # assert action[0] != action[1]
                 action = action.tolist()
         decision = Decision()
         decision.active_server = action[0]
-        decision.standby_server = action[1]
+        decision.standby_server = 0
+        for i in range(self.net.actions_per_dimension):
+            if i != action[0] and verify_standby(model, sfc_index, action[0], i, test_env):
+                decision.standby_server = i
+                break
+        # decision.standby_server = action[1]
         self.epsilon = max(self.epsilon_final, self.epsilon_start - self.idx / self.epsilon_decay)
         self.idx += 1
         return decision
@@ -373,7 +379,7 @@ class DQNAction(Action):
 
         :return: (int, int) action tuple
         """
-        return self.active, self.standby
+        return self.active #, self.standby
 
     def action2index(self, nodes_number: int):
         """

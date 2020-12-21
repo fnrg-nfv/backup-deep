@@ -455,149 +455,275 @@ def all_shortest_paths(topo: nx.Graph, src: int, dst: int):
         return paths
 
 
-class DecisionMaker(BaseObject):
+def is_path_throughput_met(model: Model, path: List, throughput: int, cur_sfc_type: SFCType,
+                           test_env: TestEnv):
     """
-    The class used to make deploy decision
+    Determine if the throughput requirement of the given path is meet based on current sfc type
+    :param model: given model
+    :param path: given path
+    :param throughput: given throughput requirement
+    :param cur_sfc_type: current sfc type
+    :param test_env: test environment
+    :return: true or false
     """
-
-    def __init__(self):
-        super(DecisionMaker, self).__init__()
-
-    def is_path_throughput_met(self, model: Model, path: List, throughput: int, cur_sfc_type: SFCType,
-                               test_env: TestEnv):
-        """
-        Determine if the throughput requirement of the given path is meet based on current sfc type
-        :param model: given model
-        :param path: given path
-        :param throughput: given throughput requirement
-        :param cur_sfc_type: current sfc type
-        :param test_env: test environment
-        :return: true or false
-        """
-        if cur_sfc_type == SFCType.Active:
-            for i in range(len(path) - 1):
+    if cur_sfc_type == SFCType.Active:
+        for i in range(len(path) - 1):
+            if model.topo[path[i]][path[i + 1]]["bandwidth"] - model.topo[path[i]][path[i + 1]]["reserved"] - \
+                    model.topo[path[i]][path[i + 1]]["active"] < throughput:
+                return False
+        return True
+    else:
+        for i in range(len(path) - 1):
+            if test_env == TestEnv.Aggressive:
+                if model.topo[path[i]][path[i + 1]]["bandwidth"] < throughput:
+                    return False
+            if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
+                if model.topo[path[i]][path[i + 1]]["bandwidth"] - model.topo[path[i]][path[i + 1]][
+                    "active"] < throughput:
+                    return False
+            if test_env == TestEnv.FullyReservation:
                 if model.topo[path[i]][path[i + 1]]["bandwidth"] - model.topo[path[i]][path[i + 1]]["reserved"] - \
                         model.topo[path[i]][path[i + 1]]["active"] < throughput:
                     return False
-            return True
-        else:
-            for i in range(len(path) - 1):
-                if test_env == TestEnv.Aggressive:
-                    if model.topo[path[i]][path[i + 1]]["bandwidth"] < throughput:
-                        return False
-                if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
-                    if model.topo[path[i]][path[i + 1]]["bandwidth"] - model.topo[path[i]][path[i + 1]][
-                        "active"] < throughput:
-                        return False
-                if test_env == TestEnv.FullyReservation:
-                    if model.topo[path[i]][path[i + 1]]["bandwidth"] - model.topo[path[i]][path[i + 1]]["reserved"] - \
-                            model.topo[path[i]][path[i + 1]]["active"] < throughput:
-                        return False
-            return True
+        return True
 
-    def is_path_latency_met(self, model: Model, path_s2c: List, path_c2d: List, latency: float):
-        """
-        Determine if the latency requirement of the given path is meet
-        :param model: given model
-        :param path_s2c: given path from start server to current server
-        :param path_c2d: given path from current server to destination server
-        :param latency: given latency
-        :return: true or false
-        """
-        path_latency = 0
-        for i in range(len(path_s2c) - 1):
-            path_latency += model.topo[path_s2c[i]][path_s2c[i + 1]]["latency"]  # calculate latency of path
-        for i in range(len(path_c2d) - 1):
-            path_latency += model.topo[path_c2d[i]][path_c2d[i + 1]]["latency"]  # calculate latency of path
-        if path_latency <= latency:
-            return True
+
+def is_path_latency_met(model: Model, path_s2c: List, path_c2d: List, latency: float):
+    """
+    Determine if the latency requirement of the given path is meet
+    :param model: given model
+    :param path_s2c: given path from start server to current server
+    :param path_c2d: given path from current server to destination server
+    :param latency: given latency
+    :return: true or false
+    """
+    path_latency = 0
+    for i in range(len(path_s2c) - 1):
+        path_latency += model.topo[path_s2c[i]][path_s2c[i + 1]]["latency"]  # calculate latency of path
+    for i in range(len(path_c2d) - 1):
+        path_latency += model.topo[path_c2d[i]][path_c2d[i + 1]]["latency"]  # calculate latency of path
+    if path_latency <= latency:
+        return True
+    return False
+
+
+def verify_active(model: Model, cur_sfc_index: int, cur_server_index: int, test_env: TestEnv):
+    """
+    Verify if current active sfc can be put on current server based on following two principles
+    1. if the remaining computing resource is still enough for this sfc
+    2. if available paths still exist
+    Both these two principles are met can return true, else false
+    :param test_env:
+    :param model: model
+    :param cur_sfc_index: current sfc index
+    :param cur_server_index: current server index
+    :return: true or false
+    """
+
+    # principle 1
+    if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] - \
+            model.topo.nodes[cur_server_index]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
         return False
 
-    def verify_active(self, model: Model, cur_sfc_index: int, cur_server_index: int, test_env: TestEnv):
-        """
-        Verify if current active sfc can be put on current server based on following two principles
-        1. if the remaining computing resource is still enough for this sfc
-        2. if available paths still exist
-        Both these two principles are met can return true, else false
-        :param test_env:
-        :param model: model
-        :param cur_sfc_index: current sfc index
-        :param cur_server_index: current server index
-        :return: true or false
-        """
+    # principle 2
+    remain_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].process_latency
+    for path_s2c in all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
+        if is_path_throughput_met(model, path_s2c, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
+            for path_c2d in all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
+                if is_path_latency_met(model, path_s2c, path_c2d,
+                                            remain_latency) and is_path_throughput_met(
+                    model, path_c2d, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
+                    return True
+    return False
 
-        # principle 1
+
+def verify_standby(model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int,
+                   test_env: TestEnv):
+    """
+    Verify if current stand-by sfc can be put on current server based on following three principles
+    1. if the remaining computing resource is still enough for this sfc
+    2. if available paths for updating still exist
+    3. if available paths still exist
+    Both these three principles are met can return true, else false
+    When the active instance is deployed, the topology will change and some constraints may not be met, but this is just a really small case so that we don't have to consider it.
+    :param test_env:
+    :param model: model
+    :param cur_sfc_index: current sfc index
+    :param active_server_index: active server index
+    :param cur_server_index: current server index
+    :return: true or false
+    """
+    assert test_env != TestEnv.NoBackup
+    # principle 1
+    if test_env == TestEnv.Aggressive:
+        if model.topo.nodes[cur_server_index]["computing_resource"] < model.sfc_list[
+            cur_sfc_index].computing_resource:
+            return False
+    if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
+        if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] < \
+                model.sfc_list[cur_sfc_index].computing_resource:
+            return False
+    if test_env == TestEnv.FullyReservation:
         if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] - \
                 model.topo.nodes[cur_server_index]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
             return False
 
-        # principle 2
-        remain_latency = model.sfc_list[cur_sfc_index].latency - model.sfc_list[cur_sfc_index].process_latency
-        for path_s2c in all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
-            if self.is_path_throughput_met(model, path_s2c, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
-                for path_c2d in all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
-                    if self.is_path_latency_met(model, path_s2c, path_c2d,
-                                                remain_latency) and self.is_path_throughput_met(
-                        model, path_c2d, model.sfc_list[cur_sfc_index].tp, SFCType.Active, test_env):
-                        return True
+    # principle 2
+    principle2 = False
+    for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
+        if is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
+                                       test_env):
+            principle2 = True
+            break
+    if not principle2:
         return False
 
-    def verify_standby(self, model: Model, cur_sfc_index: int, active_server_index: int, cur_server_index: int,
-                       test_env: TestEnv):
-        """
-        Verify if current stand-by sfc can be put on current server based on following three principles
-        1. if the remaining computing resource is still enough for this sfc
-        2. if available paths for updating still exist
-        3. if available paths still exist
-        Both these three principles are met can return true, else false
-        When the active instance is deployed, the topology will change and some constraints may not be met, but this is just a really small case so that we don't have to consider it.
-        :param test_env:
-        :param model: model
-        :param cur_sfc_index: current sfc index
-        :param active_server_index: active server index
-        :param cur_server_index: current server index
-        :return: true or false
-        """
-        assert test_env != TestEnv.NoBackup
-        # principle 1
-        if test_env == TestEnv.Aggressive:
-            if model.topo.nodes[cur_server_index]["computing_resource"] < model.sfc_list[
-                cur_sfc_index].computing_resource:
-                return False
-        if test_env == TestEnv.Normal or test_env == TestEnv.MaxReservation:
-            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] < \
-                    model.sfc_list[cur_sfc_index].computing_resource:
-                return False
-        if test_env == TestEnv.FullyReservation:
-            if model.topo.nodes[cur_server_index]["computing_resource"] - model.topo.nodes[cur_server_index]["active"] - \
-                    model.topo.nodes[cur_server_index]["reserved"] < model.sfc_list[cur_sfc_index].computing_resource:
-                return False
+    # principle 3
+    for path_s2c in all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
+        if is_path_throughput_met(model, path_s2c, model.sfc_list[cur_sfc_index].tp, SFCType.Standby,
+                                       test_env):
+            for path_c2d in all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
+                if is_path_latency_met(model, path_s2c, path_c2d,
+                                            model.sfc_list[cur_sfc_index].latency - model.sfc_list[
+                                                cur_sfc_index].process_latency) and is_path_throughput_met(
+                    model,
+                    path_c2d,
+                    model.sfc_list[
+                        cur_sfc_index].tp,
+                    SFCType.Standby, test_env):
+                    return True
+    return False
 
-        # principle 2
-        principle2 = False
-        for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
-                                           test_env):
-                principle2 = True
-                break
-        if not principle2:
-            return False
 
-        # principle 3
-        for path_s2c in all_shortest_paths(model.topo, model.sfc_list[cur_sfc_index].s, cur_server_index):
-            if self.is_path_throughput_met(model, path_s2c, model.sfc_list[cur_sfc_index].tp, SFCType.Standby,
+def select_path(path_set: List, coupled: bool):
+    """
+    select path from paths
+    :param path_set:
+    :param coupled:
+    :return: if success, return the path selected, else return False
+    """
+    if len(path_set) == 0:
+        return False
+
+    if not coupled:
+        min_value = float("inf")
+        min_path = []
+        for path in path_set:
+            length = len(path)
+            if length < min_value:
+                min_value = length
+                min_path = path
+        return min_path
+    else:
+        min_value = float("inf")
+        min_path = []
+        for path_item in path_set:
+            length = len(path_item[0]) + len(path_item[1])
+            if length < min_value:
+                min_value = length
+                min_path = path_item
+        return min_path
+
+
+def select_paths(model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
+    """
+    select paths for determined active instance server index and stand-by instance server index
+    :param model: model
+    :param sfc_index: sfc index
+    :param active_index: active server index
+    :param standby_index: stand-by server index
+    :param test_env: test environment
+    :return: true or false, select path
+    """
+
+    # No backup condition
+    if test_env == TestEnv.NoBackup:
+        flag = True
+        active_paths = []
+        temp_active_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index)[0]
+        temp_active_c2d = all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d)[0]
+        for active_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
+            if is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active,
                                            test_env):
-                for path_c2d in all_shortest_paths(model.topo, cur_server_index, model.sfc_list[cur_sfc_index].d):
-                    if self.is_path_latency_met(model, path_s2c, path_c2d,
-                                                model.sfc_list[cur_sfc_index].latency - model.sfc_list[
-                                                    cur_sfc_index].process_latency) and self.is_path_throughput_met(
+                for active_c2d in all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
+                    if is_path_latency_met(model, active_s2c, active_c2d,
+                                                model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                    sfc_index].process_latency) and is_path_throughput_met(
                         model,
-                        path_c2d,
+                        active_c2d,
                         model.sfc_list[
-                            cur_sfc_index].tp,
-                        SFCType.Standby, test_env):
-                        return True
-        return False
+                            sfc_index].tp,
+                        SFCType.Active, test_env):
+                        active_paths.append([active_s2c, active_c2d])
+
+        if len(active_paths) == 0:
+            active_paths.append([temp_active_s2c, temp_active_c2d])
+            flag = False
+        active_path = select_path(active_paths, True)
+        return [flag, active_path]
+
+    # calculate paths for active instance
+    flag = True
+    active_paths = []
+    temp_active_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index)[0]
+    temp_active_c2d = all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d)[0]
+    for active_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
+        if is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
+            for active_c2d in all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
+                if is_path_latency_met(model, active_s2c, active_c2d,
+                                            model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                sfc_index].process_latency) and is_path_throughput_met(
+                    model,
+                    active_c2d,
+                    model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
+                    active_paths.append([active_s2c, active_c2d])
+    if len(active_paths) == 0:
+        active_paths.append([temp_active_s2c, temp_active_c2d])
+        flag = False
+    active_path = select_path(active_paths, True)
+
+    # calculate paths for stand-by instance
+    standby_paths = []
+    temp_standby_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index)[0]
+    temp_standby_c2d = all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d)[0]
+
+    for standby_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index):
+        if is_path_throughput_met(model, standby_s2c, model.sfc_list[sfc_index].tp, SFCType.Standby, test_env):
+            for standby_c2d in all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d):
+                if is_path_latency_met(model, standby_s2c, standby_c2d,
+                                            model.sfc_list[sfc_index].latency - model.sfc_list[
+                                                sfc_index].process_latency) and is_path_throughput_met(
+                    model,
+                    standby_c2d,
+                    model.sfc_list[
+                        sfc_index].tp,
+                    SFCType.Standby, test_env):
+                    standby_paths.append([standby_s2c, standby_c2d])
+    if len(standby_paths) == 0:
+        flag = False
+        standby_paths.append([temp_standby_s2c, temp_standby_c2d])
+    standby_path = select_path(standby_paths, True)
+
+    # calculate paths for updating
+    update_paths = []
+    temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
+    for path in all_shortest_paths(model.topo, active_index, standby_index):
+        if is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+            update_paths.append(path)
+    if len(update_paths) == 0:
+        flag = False
+        update_paths.append(temp_update)
+    update_path = select_path(update_paths, False)
+
+    return [flag, active_path, standby_path, update_path]
+
+
+class DecisionMaker(BaseObject):
+    """
+    The class used to make deploy decision
+    """
+    def __init__(self):
+        super(DecisionMaker, self).__init__()
 
     @abstractmethod
     def generate_decision(self, model: Model, cur_sfc_index: int, state: List, test_env: TestEnv):
@@ -646,7 +772,7 @@ class DecisionMaker(BaseObject):
                 return False, decision
 
         # paths met or not
-        paths = self.select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
+        paths = select_paths(model, cur_sfc_index, decision.active_server, decision.standby_server, test_env)
         flag = paths[0]
         paths = paths[1:]
         if not flag:
@@ -752,127 +878,6 @@ class DecisionMaker(BaseObject):
             decision.set_active_path_c2d(paths[0][1])
         return flag, decision
 
-    def select_path(self, path_set: List, coupled: bool):
-        """
-        select path from paths
-        :param path_set:
-        :param coupled:
-        :return: if success, return the path selected, else return False
-        """
-        if len(path_set) == 0:
-            return False
-
-        if not coupled:
-            min_value = float("inf")
-            min_path = []
-            for path in path_set:
-                length = len(path)
-                if length < min_value:
-                    min_value = length
-                    min_path = path
-            return min_path
-        else:
-            min_value = float("inf")
-            min_path = []
-            for path_item in path_set:
-                length = len(path_item[0]) + len(path_item[1])
-                if length < min_value:
-                    min_value = length
-                    min_path = path_item
-            return min_path
-
-    def select_paths(self, model: Model, sfc_index: int, active_index: int, standby_index: int, test_env: TestEnv):
-        """
-        select paths for determined active instance server index and stand-by instance server index
-        :param model: model
-        :param sfc_index: sfc index
-        :param active_index: active server index
-        :param standby_index: stand-by server index
-        :param test_env: test environment
-        :return: true or false, select path
-        """
-
-        # No backup condition
-        if test_env == TestEnv.NoBackup:
-            flag = True
-            active_paths = []
-            temp_active_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index)[0]
-            temp_active_c2d = all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d)[0]
-            for active_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
-                if self.is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active,
-                                               test_env):
-                    for active_c2d in all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
-                        if self.is_path_latency_met(model, active_s2c, active_c2d,
-                                                    model.sfc_list[sfc_index].latency - model.sfc_list[
-                                                        sfc_index].process_latency) and self.is_path_throughput_met(
-                            model,
-                            active_c2d,
-                            model.sfc_list[
-                                sfc_index].tp,
-                            SFCType.Active, test_env):
-                            active_paths.append([active_s2c, active_c2d])
-
-            if len(active_paths) == 0:
-                active_paths.append([temp_active_s2c, temp_active_c2d])
-                flag = False
-            active_path = self.select_path(active_paths, True)
-            return [flag, active_path]
-
-        # calculate paths for active instance
-        flag = True
-        active_paths = []
-        temp_active_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index)[0]
-        temp_active_c2d = all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d)[0]
-        for active_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, active_index):
-            if self.is_path_throughput_met(model, active_s2c, model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
-                for active_c2d in all_shortest_paths(model.topo, active_index, model.sfc_list[sfc_index].d):
-                    if self.is_path_latency_met(model, active_s2c, active_c2d,
-                                                model.sfc_list[sfc_index].latency - model.sfc_list[
-                                                    sfc_index].process_latency) and self.is_path_throughput_met(
-                        model,
-                        active_c2d,
-                        model.sfc_list[sfc_index].tp, SFCType.Active, test_env):
-                        active_paths.append([active_s2c, active_c2d])
-        if len(active_paths) == 0:
-            active_paths.append([temp_active_s2c, temp_active_c2d])
-            flag = False
-        active_path = self.select_path(active_paths, True)
-
-        # calculate paths for stand-by instance
-        standby_paths = []
-        temp_standby_s2c = all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index)[0]
-        temp_standby_c2d = all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d)[0]
-
-        for standby_s2c in all_shortest_paths(model.topo, model.sfc_list[sfc_index].s, standby_index):
-            if self.is_path_throughput_met(model, standby_s2c, model.sfc_list[sfc_index].tp, SFCType.Standby, test_env):
-                for standby_c2d in all_shortest_paths(model.topo, standby_index, model.sfc_list[sfc_index].d):
-                    if self.is_path_latency_met(model, standby_s2c, standby_c2d,
-                                                model.sfc_list[sfc_index].latency - model.sfc_list[
-                                                    sfc_index].process_latency) and self.is_path_throughput_met(
-                        model,
-                        standby_c2d,
-                        model.sfc_list[
-                            sfc_index].tp,
-                        SFCType.Standby, test_env):
-                        standby_paths.append([standby_s2c, standby_c2d])
-        if len(standby_paths) == 0:
-            flag = False
-            standby_paths.append([temp_standby_s2c, temp_standby_c2d])
-        standby_path = self.select_path(standby_paths, True)
-
-        # calculate paths for updating
-        update_paths = []
-        temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
-        for path in all_shortest_paths(model.topo, active_index, standby_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
-                update_paths.append(path)
-        if len(update_paths) == 0:
-            flag = False
-            update_paths.append(temp_update)
-        update_path = self.select_path(update_paths, False)
-
-        return [flag, active_path, standby_path, update_path]
-
 
 class RandomDecisionMakerWithGuarantee(DecisionMaker):
     """
@@ -914,7 +919,7 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
 
         # principle 2
         for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
+            if is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
                                            test_env):
                 return True
         return False
@@ -929,7 +934,7 @@ class RandomDecisionMakerWithGuarantee(DecisionMaker):
         """
         desision_set = []
         for i in range(len(model.topo.nodes)):
-            if not self.verify_active(model, cur_sfc_index, i, test_env):
+            if not verify_active(model, cur_sfc_index, i, test_env):
                 continue
             if test_env == TestEnv.NoBackup:
                 desision_set.append(Decision(i, -1))
@@ -992,11 +997,11 @@ class ICCDecisionMakerWithStrongGuarantee(DecisionMaker):
         update_paths = []
         temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
         for path in all_shortest_paths(model.topo, active_index, standby_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+            if is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
             update_paths.append(temp_update)
-        update_path = self.select_path(update_paths, False)
+        update_path = select_path(update_paths, False)
         return update_path
 
     def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int,
@@ -1008,7 +1013,7 @@ class ICCDecisionMakerWithStrongGuarantee(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index,
+        if cur_active_index != cur_standby_index and verify_active(model, cur_sfc_index, cur_active_index,
                                                                         test_env) and self.verify_standby(model,
                                                                                                           cur_sfc_index,
                                                                                                           cur_active_index,
@@ -1078,11 +1083,11 @@ class WorstDecisionMakerWithStrongGuarantee(DecisionMaker):
         update_paths = []
         temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
         for path in all_shortest_paths(model.topo, active_index, standby_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+            if is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
             update_paths.append(temp_update)
-        update_path = self.select_path(update_paths, False)
+        update_path = select_path(update_paths, False)
         return update_path
 
     def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int,
@@ -1094,7 +1099,7 @@ class WorstDecisionMakerWithStrongGuarantee(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index,
+        if cur_active_index != cur_standby_index and verify_active(model, cur_sfc_index, cur_active_index,
                                                                         test_env) and self.verify_standby(model,
                                                                                                           cur_sfc_index,
                                                                                                           cur_active_index,
@@ -1151,7 +1156,7 @@ class RandomDecisionMakerWithStrongGuarantee(DecisionMaker):
         """
         desision_set = []
         for i in range(len(model.topo.nodes)):
-            if not self.verify_active(model, cur_sfc_index, i, test_env):
+            if not verify_active(model, cur_sfc_index, i, test_env):
                 continue
             if test_env == TestEnv.NoBackup:
                 desision_set.append(Decision(i, -1))
@@ -1251,7 +1256,7 @@ class ICCheuristic(DecisionMaker):
 
         # principle 2
         for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
+            if is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
                                            test_env):
                 return True
         return False
@@ -1280,11 +1285,11 @@ class ICCheuristic(DecisionMaker):
         update_paths = []
         temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
         for path in all_shortest_paths(model.topo, active_index, standby_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+            if is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
             update_paths.append(temp_update)
-        update_path = self.select_path(update_paths, False)
+        update_path = select_path(update_paths, False)
         return update_path
 
     def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int,
@@ -1296,7 +1301,7 @@ class ICCheuristic(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index,
+        if cur_active_index != cur_standby_index and verify_active(model, cur_sfc_index, cur_active_index,
                                                                         test_env) and self.verify_standby(model,
                                                                                                           cur_sfc_index,
                                                                                                           cur_active_index,
@@ -1375,7 +1380,7 @@ class Worst(DecisionMaker):
 
         # principle 2
         for path in all_shortest_paths(model.topo, active_server_index, cur_server_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
+            if is_path_throughput_met(model, path, model.sfc_list[cur_sfc_index].update_tp, SFCType.Active,
                                            test_env):
                 return True
         return False
@@ -1404,11 +1409,11 @@ class Worst(DecisionMaker):
         update_paths = []
         temp_update = all_shortest_paths(model.topo, active_index, standby_index)[0]
         for path in all_shortest_paths(model.topo, active_index, standby_index):
-            if self.is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
+            if is_path_throughput_met(model, path, model.sfc_list[sfc_index].update_tp, SFCType.Active, test_env):
                 update_paths.append(path)
         if len(update_paths) == 0:
             update_paths.append(temp_update)
-        update_path = self.select_path(update_paths, False)
+        update_path = select_path(update_paths, False)
         return update_path
 
     def judge_decision(self, model: Model, cur_active_index: int, cur_standby_index: int, cur_sfc_index: int,
@@ -1420,7 +1425,7 @@ class Worst(DecisionMaker):
         :param cur_sfc_index: cur processing sfc index
         :return: decision sets
         """
-        if cur_active_index != cur_standby_index and self.verify_active(model, cur_sfc_index, cur_active_index,
+        if cur_active_index != cur_standby_index and verify_active(model, cur_sfc_index, cur_active_index,
                                                                         test_env) and self.verify_standby(model,
                                                                                                           cur_sfc_index,
                                                                                                           cur_active_index,
